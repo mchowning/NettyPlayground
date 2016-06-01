@@ -1,4 +1,4 @@
-package com.mattchowning.utils;
+package com.mattchowning.time_client;
 
 import com.mattchowning.model.UnixTime;
 

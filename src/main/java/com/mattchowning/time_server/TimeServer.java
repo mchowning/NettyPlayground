@@ -1,7 +1,6 @@
-package com.mattchowning.server;
+package com.mattchowning.time_server;
 
-import com.mattchowning.server.handler.TimeServerHandler;
-import com.mattchowning.utils.TimeEncoder;
+import com.mattchowning.BasicServer;
 
 public class TimeServer extends BasicServer {
 

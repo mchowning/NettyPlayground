@@ -1,7 +1,4 @@
-package com.mattchowning.client;
-
-import com.mattchowning.client.handler.TimeClientHandler;
-import com.mattchowning.utils.TimeDecoder;
+package com.mattchowning.time_client;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;

@@ -1,4 +1,4 @@
-package com.mattchowning.server.handler;
+package com.mattchowning.discard_server;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;

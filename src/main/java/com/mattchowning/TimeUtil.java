@@ -1,4 +1,4 @@
-package com.mattchowning.utils;
+package com.mattchowning;
 
 public class TimeUtil {
 

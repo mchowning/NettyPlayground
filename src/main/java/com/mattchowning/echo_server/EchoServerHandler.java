@@ -1,17 +1,15 @@
-package com.mattchowning.client.handler;
-
-import com.mattchowning.model.UnixTime;
+package com.mattchowning.echo_server;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
-public class TimeClientHandler extends ChannelInboundHandlerAdapter {
+public class EchoServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        UnixTime unixTime = (UnixTime) msg;
-        System.out.println(unixTime);
-        ctx.close();
+        ctx.write(msg);
+        ctx.flush();
+        //ctx.writeAndFlush(msg); // Alternative
     }
 
     @Override

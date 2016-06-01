@@ -1,6 +1,6 @@
-package com.mattchowning.server;
+package com.mattchowning.echo_server;
 
-import com.mattchowning.server.handler.EchoServerHandler;
+import com.mattchowning.BasicServer;
 
 public class EchoServer extends BasicServer {
     public EchoServer(int port) {

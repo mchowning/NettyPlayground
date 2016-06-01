@@ -1,4 +1,4 @@
-package com.mattchowning.server.handler;
+package com.mattchowning.time_server;
 
 import com.mattchowning.model.UnixTime;
 

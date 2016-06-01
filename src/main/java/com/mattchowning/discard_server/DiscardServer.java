@@ -1,6 +1,6 @@
-package com.mattchowning.server;
+package com.mattchowning.discard_server;
 
-import com.mattchowning.server.handler.DiscardServerHandler;
+import com.mattchowning.BasicServer;
 
 public class DiscardServer extends BasicServer {
 

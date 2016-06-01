@@ -1,6 +1,6 @@
 package com.mattchowning.model;
 
-import com.mattchowning.utils.TimeUtil;
+import com.mattchowning.TimeUtil;
 
 import java.util.Date;
 

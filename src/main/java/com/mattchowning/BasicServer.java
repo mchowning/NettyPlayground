@@ -1,4 +1,4 @@
-package com.mattchowning.server;
+package com.mattchowning;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -18,7 +18,7 @@ public class BasicServer {
         this.channelHandlers = channelHandlers;
     }
 
-    static Integer readPort(String[] args) {
+    protected static Integer readPort(String[] args) {
         return args.length > 0
                 ? Integer.parseInt(args[0])
                 : DEFAULT_PORT;
