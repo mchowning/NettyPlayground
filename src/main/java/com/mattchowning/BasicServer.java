@@ -11,11 +11,11 @@ public class BasicServer {
     private static final int DEFAULT_PORT = 8080;
 
     private final int port;
-    private final ChannelHandler[] channelHandlers;
+    private final ChannelInitializer<SocketChannel> channelInitializer;
 
-    public BasicServer(int port, ChannelHandler... channelHandlers) {
+    public BasicServer(int port, ChannelInitializer<SocketChannel> channelInitializer) {
         this.port = port;
-        this.channelHandlers = channelHandlers;
+        this.channelInitializer = channelInitializer;
     }
 
     protected static Integer readPort(String[] args) {
@@ -31,17 +31,11 @@ public class BasicServer {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
-                    .childHandler(new ChannelInitializer<SocketChannel>() {
-                        @Override
-                        protected void initChannel(SocketChannel ch) throws Exception {
-                            ch.pipeline().addLast(channelHandlers);
-                        }
-                    })
+                    .childHandler(channelInitializer)
                     .option(ChannelOption.SO_BACKLOG, 128)
                     .childOption(ChannelOption.SO_KEEPALIVE, true);
 
-            ChannelFuture f = b.bind(port).sync();
-            f.channel().closeFuture().sync();
+            b.bind(port).sync().channel().closeFuture().sync();
         } finally {
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();
