@@ -46,7 +46,7 @@ public class FileReadWriteHandler extends SimpleChannelInboundHandler<FullHttpRe
         if (isAuthorized(request)) {
             processRequest(ctx, request);
         } else {
-            sendError(ctx, HttpResponseStatus.FORBIDDEN);
+            sendError(ctx, HttpResponseStatus.UNAUTHORIZED);
         }
         ctx.writeAndFlush('\n');
     }
@@ -67,8 +67,8 @@ public class FileReadWriteHandler extends SimpleChannelInboundHandler<FullHttpRe
 
     private boolean isAuthorized(FullHttpRequest request) {
         String encodedAuthHeader = request.headers().get(HttpHeaderNames.AUTHORIZATION);
-        String lastWordOfEncodedAuthHeader = encodedAuthHeader.replaceAll(".*\\s", ""); // FIXME
-        byte[] decodedAuthHeader = Base64.getDecoder().decode(lastWordOfEncodedAuthHeader);
+        String userPassPortionOfAuthHeader = encodedAuthHeader.split("\\s")[1];
+        byte[] decodedAuthHeader = Base64.getDecoder().decode(userPassPortionOfAuthHeader);
         return Arrays.equals(AUTH_STRING.getBytes(), (decodedAuthHeader));
     }
 
