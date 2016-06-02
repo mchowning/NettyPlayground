@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Locale;
@@ -30,13 +32,26 @@ import io.netty.util.internal.SystemPropertyUtil;
 
 public class FileReadWriteHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
-    private static final String RELATIVE_FILE_PATH = "src/main/java/com/mattchowning/file_read_write_server/ServerFile.txt";
+    private static final String RELATIVE_FILE_PATH = "src/main/java/com/mattchowning/file_read_write_server/SecretServerFile.txt";
     private static final String FULL_FILE_PATH = SystemPropertyUtil.get("user.dir") + File.separator + RELATIVE_FILE_PATH;
-    public static final String HTTP_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss zzz";
-    public static final String HTTP_DATE_GMT_TIMEZONE = "GMT";
+    private static final String HTTP_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss zzz";
+    private static final String HTTP_DATE_GMT_TIMEZONE = "GMT";
+    private static final String USERNAME = "user";
+    private static final String PASSWORD = "secret";
+    private static final String AUTH_STRING = String.format("%s:%s", USERNAME, PASSWORD);
+
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
+        if (isAuthorized(request)) {
+            processRequest(ctx, request);
+        } else {
+            sendError(ctx, HttpResponseStatus.FORBIDDEN);
+        }
+        ctx.writeAndFlush('\n');
+    }
+
+    private void processRequest(ChannelHandlerContext ctx, FullHttpRequest request) {
         switch (request.method().toString()) {
             case "GET":
                 returnFileContent(ctx);
@@ -48,7 +63,13 @@ public class FileReadWriteHandler extends SimpleChannelInboundHandler<FullHttpRe
             default:
                 sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED);
         }
-        ctx.writeAndFlush('\n');
+    }
+
+    private boolean isAuthorized(FullHttpRequest request) {
+        String encodedAuthHeader = request.headers().get(HttpHeaderNames.AUTHORIZATION);
+        String lastWordOfEncodedAuthHeader = encodedAuthHeader.replaceAll(".*\\s", ""); // FIXME
+        byte[] decodedAuthHeader = Base64.getDecoder().decode(lastWordOfEncodedAuthHeader);
+        return Arrays.equals(AUTH_STRING.getBytes(), (decodedAuthHeader));
     }
 
     private static void returnFileContent(ChannelHandlerContext ctx) {
