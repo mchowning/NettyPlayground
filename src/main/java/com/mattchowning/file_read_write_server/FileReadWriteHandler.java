@@ -3,7 +3,13 @@ package com.mattchowning.file_read_write_server;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.Locale;
+import java.util.TimeZone;
+
+import javax.activation.MimetypesFileTypeMap;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -26,6 +32,8 @@ public class FileReadWriteHandler extends SimpleChannelInboundHandler<FullHttpRe
 
     private static final String RELATIVE_FILE_PATH = "src/main/java/com/mattchowning/file_read_write_server/ServerFile.txt";
     private static final String FULL_FILE_PATH = SystemPropertyUtil.get("user.dir") + File.separator + RELATIVE_FILE_PATH;
+    public static final String HTTP_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss zzz";
+    public static final String HTTP_DATE_GMT_TIMEZONE = "GMT";
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
@@ -43,17 +51,32 @@ public class FileReadWriteHandler extends SimpleChannelInboundHandler<FullHttpRe
         ctx.writeAndFlush('\n');
     }
 
-    private static void returnFileContent(ChannelHandlerContext ctx) throws Exception {
-        RandomAccessFile raf = getRandomAccessFile(ctx);
-        if (raf != null) {
-            HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-            HttpUtil.setContentLength(response, raf.length());
+    private static void returnFileContent(ChannelHandlerContext ctx) {
+        try {
+            File file = new File(FULL_FILE_PATH);
+            HttpResponse response = getHttpResponse(file);
+            DefaultFileRegion fileContent = new DefaultFileRegion(file, 0, file.length());
             ctx.write(response);
-            DefaultFileRegion defaultFileRegion = new DefaultFileRegion(raf.getChannel(), 0, raf.length());
-            ctx.writeAndFlush(defaultFileRegion);
-        } else {
+            ctx.writeAndFlush(fileContent);
+        } catch (IOException e) {
+            e.printStackTrace();
             sendError(ctx, HttpResponseStatus.NO_CONTENT);
         }
+    }
+
+    private static HttpResponse getHttpResponse(File file) throws IOException {
+        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+        HttpUtil.setContentLength(response, file.length());
+        setContentTypeHeader(response, file);
+        setDateHeader(response);
+        return response;
+    }
+
+    private static void setDateHeader(HttpResponse response) {
+        SimpleDateFormat dateFormatter = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
+        dateFormatter.setTimeZone(TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
+        Calendar time = new GregorianCalendar();
+        response.headers().set(HttpHeaderNames.DATE, dateFormatter.format(time.getTime()));
     }
 
     private static void writeFileContent(ChannelHandlerContext ctx, ByteBuf byteBuf) {
@@ -74,19 +97,9 @@ public class FileReadWriteHandler extends SimpleChannelInboundHandler<FullHttpRe
         return result;
     }
 
-    private static RandomAccessFile getRandomAccessFile(ChannelHandlerContext ctx) throws Exception {
-        //RandomAccessFile raf = null;
-        //long length = -1;
-        try {
-            return new RandomAccessFile(FULL_FILE_PATH, "r");
-        } catch (Exception e) {
-            ctx.writeAndFlush("ERR: " + e.getClass().getSimpleName() + ": " + e.getMessage() + '\n');
-            return null;
-        } finally {
-            //if (length < 0 && raf != null) {
-            //    raf.close();
-            //}
-        }
+    private static void setContentTypeHeader(HttpResponse response, File file) {
+        String contentType = new MimetypesFileTypeMap().getContentType(file.getPath());
+        response.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType);
     }
 
     private static void sendError(ChannelHandlerContext ctx, HttpResponseStatus status) {
