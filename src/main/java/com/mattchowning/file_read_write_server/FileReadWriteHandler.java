@@ -124,10 +124,12 @@ public class FileReadWriteHandler extends SimpleChannelInboundHandler<FullHttpRe
     }
 
     private static void sendError(ChannelHandlerContext ctx, HttpResponseStatus status) {
+        String contentText = "Failure: " + status + "\r\n";
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
                                                                 status,
-                                                                Unpooled.copiedBuffer("Failure: " + status + "\r\n", CharsetUtil.UTF_8));
+                                                                Unpooled.copiedBuffer(contentText, CharsetUtil.UTF_8));
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
+        HttpUtil.setContentLength(response, contentText.length());
         ctx.write(response);
     }
 
