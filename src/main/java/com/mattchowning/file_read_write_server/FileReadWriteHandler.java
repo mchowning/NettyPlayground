@@ -1,14 +1,19 @@
 package com.mattchowning.file_read_write_server;
 
+import com.google.gson.Gson;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
 
 import javax.activation.MimetypesFileTypeMap;
@@ -23,10 +28,12 @@ import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.CharsetUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 
@@ -40,18 +47,92 @@ public class FileReadWriteHandler extends SimpleChannelInboundHandler<FullHttpRe
     private static final String PASSWORD = "secret";
     private static final String AUTH_STRING = String.format("%s:%s", USERNAME, PASSWORD);
 
+    private List<String> issuedTokens = new ArrayList();
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
-        if (isAuthorized(request)) {
-            processRequest(ctx, request);
+        if (isOAuthRequest(request)) {
+            processOAuthRequest(ctx, request);
+        } else if (isAuthorized(request)) {
+            processFileRequest(ctx, request);
         } else {
-            sendError(ctx, HttpResponseStatus.UNAUTHORIZED);
+            sendError(ctx, HttpResponseStatus.UNAUTHORIZED, "invalid_client", "client not authorized");
         }
         ctx.writeAndFlush('\n');
     }
 
-    private void processRequest(ChannelHandlerContext ctx, FullHttpRequest request) {
+    private void processOAuthRequest(ChannelHandlerContext ctx, FullHttpRequest request) {
+        if (checkOAuthRequest(ctx, request)) {
+            String token = getNewToken();
+            // FIXME make successful response consistent with 5.1
+            respondWithPlainTextBody(ctx, token);
+        }
+    }
+
+    private boolean checkOAuthRequest(ChannelHandlerContext ctx, FullHttpRequest request) {
+        boolean isApproved = false;
+        Map<String, List<String>> params = new QueryStringDecoder(request.uri()).parameters();
+        if (request.method() != HttpMethod.POST) {
+            sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "oauth request must be POST");
+        } else if (!hasParam(params, "grant_type", "password")) {
+            String errorDescription = "oauth request must specify grant_type of password";
+            sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", errorDescription);
+        } else if (!hasParamKey(params, "username")) {
+            String errorDescription = "oauth request must specify username";
+            sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", errorDescription);
+        } else if (!hasParamKey(params, "password")) {
+            String errorDescription = "oauth request must specify password";
+            sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", errorDescription);
+        } else if (isShadyUser(params)) {
+            sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_client", "user is shady");
+        } else {
+            isApproved = true;
+        }
+        return isApproved;
+    }
+
+    private String getNewToken() {
+        String token = TokenGenerator.generateNew();
+        issuedTokens.add(token);
+        return token;
+    }
+
+    private void respondWithPlainTextBody(ChannelHandlerContext ctx, String token) {
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
+                                                                HttpResponseStatus.OK,
+                                                                Unpooled.copiedBuffer(token, CharsetUtil.UTF_8));
+        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
+        setDateHeader(response);
+        HttpUtil.setContentLength(response, token.length());
+        ctx.write(response);
+        ctx.write(token);
+    }
+
+    private boolean hasParamKey(Map<String, List<String>> params, String key) {
+        return params != null
+               && params.get(key) != null;
+    }
+
+    private boolean hasParam(Map<String, List<String>> params, String key, String value) {
+        return params != null
+                && params.get(key) != null &&
+               params.get(key).contains(value);
+    }
+
+    private boolean isShadyUser(Map<String, List<String>> params) {
+        return hasParam(params, "username", "sleepynate");
+    }
+
+    private boolean isOAuthRequest(FullHttpRequest request) {
+        if (request != null) {
+            String path = new QueryStringDecoder(request.uri()).path();
+            return "/oauth".equals(path);
+        } else {
+            return false;
+        }
+    }
+
+    private void processFileRequest(ChannelHandlerContext ctx, FullHttpRequest request) {
         switch (request.method().toString()) {
             case "GET":
                 returnFileContent(ctx);
@@ -67,9 +148,13 @@ public class FileReadWriteHandler extends SimpleChannelInboundHandler<FullHttpRe
 
     private boolean isAuthorized(FullHttpRequest request) {
         String encodedAuthHeader = request.headers().get(HttpHeaderNames.AUTHORIZATION);
-        String userPassPortionOfAuthHeader = encodedAuthHeader.split("\\s")[1];
-        byte[] decodedAuthHeader = Base64.getDecoder().decode(userPassPortionOfAuthHeader);
-        return Arrays.equals(AUTH_STRING.getBytes(), (decodedAuthHeader));
+        if (encodedAuthHeader == null) {
+            return false;
+        } else {
+            String userPassPortionOfAuthHeader = encodedAuthHeader.split("\\s")[1];
+            byte[] decodedAuthHeader = Base64.getDecoder().decode(userPassPortionOfAuthHeader);
+            return Arrays.equals(AUTH_STRING.getBytes(), (decodedAuthHeader));
+        }
     }
 
     private static void returnFileContent(ChannelHandlerContext ctx) {
@@ -124,12 +209,21 @@ public class FileReadWriteHandler extends SimpleChannelInboundHandler<FullHttpRe
     }
 
     private static void sendError(ChannelHandlerContext ctx, HttpResponseStatus status) {
-        String contentText = "Failure: " + status + "\r\n";
+        sendError(ctx, status, status.toString());
+    }
+
+    private static void sendError(ChannelHandlerContext ctx, HttpResponseStatus status, String errorMsg) {
+        sendError(ctx, status, errorMsg, null);
+    }
+
+    private static void sendError(ChannelHandlerContext ctx, HttpResponseStatus status, String errorMsg, String errorDescription) {
+        Error error = new Error(errorMsg, errorDescription);
+        String json = new Gson().toJson(error);
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
                                                                 status,
-                                                                Unpooled.copiedBuffer(contentText, CharsetUtil.UTF_8));
+                                                                Unpooled.copiedBuffer(json, CharsetUtil.UTF_8));
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
-        HttpUtil.setContentLength(response, contentText.length());
+        HttpUtil.setContentLength(response, json.length());
         ctx.write(response);
     }
 
