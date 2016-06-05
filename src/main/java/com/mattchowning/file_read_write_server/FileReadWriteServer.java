@@ -18,7 +18,7 @@ public class FileReadWriteServer extends BasicServer {
                 ch.pipeline()
                   .addLast(new HttpServerCodec(),
                            new HttpObjectAggregator(MAX_BODY_LENGTH),
-                           new FileReadWriteHandler());
+                           new FileReadWriteServerHandler());
             }
         });
     }

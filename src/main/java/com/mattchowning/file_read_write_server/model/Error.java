@@ -1,4 +1,4 @@
-package com.mattchowning.file_read_write_server;
+package com.mattchowning.file_read_write_server.model;
 
 public class Error {
 
