@@ -7,6 +7,7 @@ import com.mattchowning.file_read_write_server.model.OAuthModel;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -21,6 +22,7 @@ import javax.activation.MimetypesFileTypeMap;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.DefaultFileRegion;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -38,6 +40,7 @@ import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.CharsetUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 
+@ChannelHandler.Sharable
 public class FileReadWriteServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
     public static final String OAUTH_PATH = "/oauth";
@@ -45,6 +48,7 @@ public class FileReadWriteServerHandler extends SimpleChannelInboundHandler<Full
     public static final String GRANT_TYPE_PASSWORD = "password";
     public static final String PASSWORD_KEY = "password";
     public static final String USERNAME_KEY = "username";
+    public static final Charset RESPONSE_CHARSET = CharsetUtil.UTF_8;
 
     private static final String RELATIVE_FILE_PATH = "src/main/java/com/mattchowning/file_read_write_server/SecretServerFile.txt";
     private static final String FULL_FILE_PATH = SystemPropertyUtil.get("user.dir") + File.separator + RELATIVE_FILE_PATH;
@@ -52,6 +56,8 @@ public class FileReadWriteServerHandler extends SimpleChannelInboundHandler<Full
     private static final String HTTP_DATE_GMT_TIMEZONE = "GMT";
 
     private Set<String> issuedTokens = new HashSet<>();
+
+    // FIXME separate out authentication check into separate class/handler
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
@@ -100,7 +106,7 @@ public class FileReadWriteServerHandler extends SimpleChannelInboundHandler<Full
 
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
                                                                 HttpResponseStatus.OK,
-                                                                Unpooled.copiedBuffer(body, CharsetUtil.UTF_8));
+                                                                Unpooled.copiedBuffer(body, RESPONSE_CHARSET));
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json; charset=UTF-8");
         response.headers().set(HttpHeaderNames.DATE, getDate());
         response.headers().set(HttpHeaderNames.CONTENT_LENGTH, body.length());
@@ -229,7 +235,7 @@ public class FileReadWriteServerHandler extends SimpleChannelInboundHandler<Full
         String json = new Gson().toJson(error);
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
                                                                 status,
-                                                                Unpooled.copiedBuffer(json, CharsetUtil.UTF_8));
+                                                                Unpooled.copiedBuffer(json, RESPONSE_CHARSET));
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
         HttpUtil.setContentLength(response, json.length());
         ctx.write(response);

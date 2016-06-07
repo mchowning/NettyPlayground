@@ -10,6 +10,8 @@ import io.netty.handler.codec.http.HttpServerCodec;
 public class FileReadWriteServer extends BasicServer {
 
     private static final int MAX_BODY_LENGTH = 15000;
+    // TODO could just statically store a tokenStore Set here instead
+    private static final FileReadWriteServerHandler FILE_READ_WRITE_SERVER_HANDLER = new FileReadWriteServerHandler();
 
     public FileReadWriteServer(int port) {
         super(port, new ChannelInitializer<SocketChannel>() {
@@ -18,7 +20,7 @@ public class FileReadWriteServer extends BasicServer {
                 ch.pipeline()
                   .addLast(new HttpServerCodec(),
                            new HttpObjectAggregator(MAX_BODY_LENGTH),
-                           new FileReadWriteServerHandler());
+                           FILE_READ_WRITE_SERVER_HANDLER);
             }
         });
     }

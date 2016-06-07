@@ -12,28 +12,29 @@ import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.util.CharsetUtil;
 
-public class FileClientHandler extends SimpleChannelInboundHandler<FullHttpResponse> {
+public class GetFileClientHandler extends SimpleChannelInboundHandler<FullHttpResponse> {
+
+    private final OAuthModel oAuthModel;
+
+    public GetFileClientHandler(OAuthModel oAuthModel) {
+        this.oAuthModel = oAuthModel;
+    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        if (ctx.channel().hasAttr(OAuthClientHandler.OAUTH_STATE)) {
-            OAuthModel oauth = ctx.channel().attr(OAuthClientHandler.OAUTH_STATE).get();
-            requestFileContent(ctx, oauth);
-        } else {
-            throw new RuntimeException("channel does not have oauth state set");
-        }
+        requestFileContent(ctx);
     }
 
-    private void requestFileContent(ChannelHandlerContext ctx, OAuthModel oauth) {
+    private void requestFileContent(ChannelHandlerContext ctx) {
         FullHttpMessage message = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "");
-        message.headers().add(HttpHeaderNames.AUTHORIZATION, oauth.getEncodedAuthorizationHeader());
+        message.headers().add(HttpHeaderNames.AUTHORIZATION, oAuthModel.getEncodedAuthorizationHeader());
         ctx.writeAndFlush(message);
         System.out.println("file content requested");
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpResponse msg) throws Exception {
-        // FIXME handle possible error response
+        // FIXME handle error response
         // FIXME handle file content as json content
         String fileText = getContent(msg);
         System.out.println("file content received: " + fileText);
