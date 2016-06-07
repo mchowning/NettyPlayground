@@ -20,8 +20,8 @@ public class BasicServer {
 
     protected static Integer readPort(String[] args) {
         return args.length > 0
-                ? Integer.parseInt(args[0])
-                : DEFAULT_PORT;
+               ? Integer.parseInt(args[0])
+               : DEFAULT_PORT;
     }
 
     public void run() throws Exception {
@@ -30,10 +30,10 @@ public class BasicServer {
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
-                    .channel(NioServerSocketChannel.class)
-                    .childHandler(channelInitializer)
-                    .option(ChannelOption.SO_BACKLOG, 128)
-                    .childOption(ChannelOption.SO_KEEPALIVE, true);
+             .channel(NioServerSocketChannel.class)
+             .childHandler(channelInitializer)
+             .option(ChannelOption.SO_BACKLOG, 128)
+             .childOption(ChannelOption.SO_KEEPALIVE, true);
 
             b.bind(port).sync().channel().closeFuture().sync();
         } finally {
