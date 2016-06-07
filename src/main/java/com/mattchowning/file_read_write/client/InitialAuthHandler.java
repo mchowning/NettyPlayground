@@ -1,9 +1,7 @@
-package com.mattchowning.file_read_write_client;
+package com.mattchowning.file_read_write.client;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.mattchowning.file_read_write_server.FileReadWriteServerHandler;
-import com.mattchowning.file_read_write_server.model.OAuthModel;
+import com.mattchowning.file_read_write.server.model.OAuthModel;
 
 import java.util.Scanner;
 
@@ -16,11 +14,13 @@ import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.QueryStringEncoder;
 
-import static com.mattchowning.file_read_write_server.FileReadWriteServerHandler.GRANT_TYPE_KEY;
-import static com.mattchowning.file_read_write_server.FileReadWriteServerHandler.GRANT_TYPE_PASSWORD;
-import static com.mattchowning.file_read_write_server.FileReadWriteServerHandler.OAUTH_PATH;
-import static com.mattchowning.file_read_write_server.FileReadWriteServerHandler.PASSWORD_KEY;
-import static com.mattchowning.file_read_write_server.FileReadWriteServerHandler.USERNAME_KEY;
+import static com.mattchowning.file_read_write.SharedConstants.GRANT_TYPE_KEY;
+import static com.mattchowning.file_read_write.SharedConstants.GRANT_TYPE_PASSWORD;
+import static com.mattchowning.file_read_write.SharedConstants.GSON;
+import static com.mattchowning.file_read_write.SharedConstants.OAUTH_PATH;
+import static com.mattchowning.file_read_write.SharedConstants.PASSWORD_KEY;
+import static com.mattchowning.file_read_write.SharedConstants.RESPONSE_CHARSET;
+import static com.mattchowning.file_read_write.SharedConstants.USERNAME_KEY;
 
 public class InitialAuthHandler extends SimpleChannelInboundHandler<FullHttpResponse> {
 
@@ -60,7 +60,7 @@ public class InitialAuthHandler extends SimpleChannelInboundHandler<FullHttpResp
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpResponse response) throws Exception {
-        String responseBody = response.content().toString(FileReadWriteServerHandler.RESPONSE_CHARSET);
+        String responseBody = response.content().toString(RESPONSE_CHARSET);
         switch (response.status().code()) {
             case 200:
                 OAuthModel oAuthModel = parseOAuthResponse(responseBody);
@@ -73,7 +73,7 @@ public class InitialAuthHandler extends SimpleChannelInboundHandler<FullHttpResp
 
     private OAuthModel parseOAuthResponse(String responseBody) {
         try {
-            return new Gson().fromJson(responseBody, OAuthModel.class);
+            return GSON.fromJson(responseBody, OAuthModel.class);
         } catch (JsonSyntaxException e) {
             e.printStackTrace();
             return null;

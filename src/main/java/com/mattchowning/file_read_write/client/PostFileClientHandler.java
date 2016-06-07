@@ -1,6 +1,6 @@
-package com.mattchowning.file_read_write_client;
+package com.mattchowning.file_read_write.client;
 
-import com.mattchowning.file_read_write_server.model.OAuthModel;
+import com.mattchowning.file_read_write.server.model.OAuthModel;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;

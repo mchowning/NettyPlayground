@@ -1,4 +1,4 @@
-package com.mattchowning.file_read_write_server.model;
+package com.mattchowning.file_read_write.server.model;
 
 import java.util.Base64;
 
@@ -8,16 +8,16 @@ public class OAuthModel {
 
     private static final String PROPER_TOKEN_TYPE = "Bearer";
 
-    public final String access_token;
-    public final String token_type;
+    public final String accessToken;
+    public final String tokenType;
 
-    public OAuthModel(String access_token) {
-        this(access_token, PROPER_TOKEN_TYPE);
+    public OAuthModel(String accessToken) {
+        this(accessToken, PROPER_TOKEN_TYPE);
     }
 
     public OAuthModel(String accessToken, String tokenType) {
-        this.access_token = accessToken;
-        this.token_type = tokenType;
+        this.accessToken = accessToken;
+        this.tokenType = tokenType;
     }
 
     public static OAuthModel fromEncodedAuthorizationHeader(String encodedAuthorizationHeader) {
@@ -27,13 +27,13 @@ public class OAuthModel {
     }
 
     public boolean hasValidTokenType() {
-        return PROPER_TOKEN_TYPE.equals(token_type);
+        return PROPER_TOKEN_TYPE.equals(tokenType);
     }
 
     public String getEncodedAuthorizationHeader() {
         // FIXME why is UTF-8 right here?
-        byte[] encodedTokenBytes = Base64.getEncoder().encode(access_token.getBytes());
-        return String.format("%s %s", token_type, new String(encodedTokenBytes, CharsetUtil.UTF_8));
+        byte[] encodedTokenBytes = Base64.getEncoder().encode(accessToken.getBytes());
+        return String.format("%s %s", tokenType, new String(encodedTokenBytes, CharsetUtil.UTF_8));
     }
 
     public static String getAccessToken(String authorizationHeader) {

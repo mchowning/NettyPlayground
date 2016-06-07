@@ -1,13 +1,11 @@
-package com.mattchowning.file_read_write_server;
+package com.mattchowning.file_read_write.server;
 
-import com.google.gson.Gson;
-import com.mattchowning.file_read_write_server.model.Error;
-import com.mattchowning.file_read_write_server.model.OAuthModel;
+import com.mattchowning.file_read_write.server.model.Error;
+import com.mattchowning.file_read_write.server.model.OAuthModel;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -37,20 +35,20 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.QueryStringDecoder;
-import io.netty.util.CharsetUtil;
 import io.netty.util.internal.SystemPropertyUtil;
+
+import static com.mattchowning.file_read_write.SharedConstants.GRANT_TYPE_KEY;
+import static com.mattchowning.file_read_write.SharedConstants.GRANT_TYPE_PASSWORD;
+import static com.mattchowning.file_read_write.SharedConstants.GSON;
+import static com.mattchowning.file_read_write.SharedConstants.OAUTH_PATH;
+import static com.mattchowning.file_read_write.SharedConstants.PASSWORD_KEY;
+import static com.mattchowning.file_read_write.SharedConstants.RESPONSE_CHARSET;
+import static com.mattchowning.file_read_write.SharedConstants.USERNAME_KEY;
 
 @ChannelHandler.Sharable
 public class FileReadWriteServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
-    public static final String OAUTH_PATH = "/oauth";
-    public static final String GRANT_TYPE_KEY = "grant_type";
-    public static final String GRANT_TYPE_PASSWORD = "password";
-    public static final String PASSWORD_KEY = "password";
-    public static final String USERNAME_KEY = "username";
-    public static final Charset RESPONSE_CHARSET = CharsetUtil.UTF_8;
-
-    private static final String RELATIVE_FILE_PATH = "src/main/java/com/mattchowning/file_read_write_server/SecretServerFile.txt";
+    private static final String RELATIVE_FILE_PATH = "src/main/java/com/mattchowning/file_read_write/server/SecretServerFile.txt";
     private static final String FULL_FILE_PATH = SystemPropertyUtil.get("user.dir") + File.separator + RELATIVE_FILE_PATH;
     private static final String HTTP_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss zzz";
     private static final String HTTP_DATE_GMT_TIMEZONE = "GMT";
@@ -102,7 +100,7 @@ public class FileReadWriteServerHandler extends SimpleChannelInboundHandler<Full
     }
 
     private void respondWithNewOAuthToken(ChannelHandlerContext ctx, String token) {
-        String body = new Gson().toJson(new OAuthModel(token));
+        String body = GSON.toJson(new OAuthModel(token));
 
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
                                                                 HttpResponseStatus.OK,
@@ -163,7 +161,7 @@ public class FileReadWriteServerHandler extends SimpleChannelInboundHandler<Full
         if (encodedAuthHeader != null) {
             OAuthModel oAuthModel = OAuthModel.fromEncodedAuthorizationHeader(encodedAuthHeader);
             if (oAuthModel.hasValidTokenType()) {
-                return issuedTokens.contains(oAuthModel.access_token);
+                return issuedTokens.contains(oAuthModel.accessToken);
             } else {
                 throw new RuntimeException("Bearer token type required");
             }
@@ -173,7 +171,6 @@ public class FileReadWriteServerHandler extends SimpleChannelInboundHandler<Full
 
     private static void returnFileContent(ChannelHandlerContext ctx) {
         try {
-            // FIXME return file content as json
             File file = new File(FULL_FILE_PATH);
             HttpResponse response = getHttpResponse(file);
             DefaultFileRegion fileContent = new DefaultFileRegion(file, 0, file.length());
@@ -232,7 +229,7 @@ public class FileReadWriteServerHandler extends SimpleChannelInboundHandler<Full
 
     private static void sendError(ChannelHandlerContext ctx, HttpResponseStatus status, String errorMsg, String errorDescription) {
         Error error = new Error(errorMsg, errorDescription);
-        String json = new Gson().toJson(error);
+        String json = GSON.toJson(error);
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
                                                                 status,
                                                                 Unpooled.copiedBuffer(json, RESPONSE_CHARSET));

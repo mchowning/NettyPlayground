@@ -1,12 +1,12 @@
-package com.mattchowning.file_read_write_client;
+package com.mattchowning.file_read_write.client;
 
-import com.mattchowning.file_read_write_client.model.UserAction;
-import com.mattchowning.file_read_write_server.model.OAuthModel;
+import com.mattchowning.file_read_write.server.model.OAuthModel;
 
 import java.util.Scanner;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -15,11 +15,8 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpObjectAggregator;
-import io.netty.util.AttributeKey;
 
 public class FileReadWriteClient {
-
-    public static final AttributeKey<UserAction> USER_SELECTION = AttributeKey.valueOf("user_selection");
 
     private static final int MAX_BODY_LENGTH = 15000;
 
@@ -44,7 +41,7 @@ public class FileReadWriteClient {
             case GET_SELECTION:
                 System.out.println("get action fired");
                 authorizeUser(oAuthModel -> {
-                    String msg = String.format("Token received: %s %s", oAuthModel.token_type, oAuthModel.access_token);
+                    String msg = String.format("Token received: %s %s", oAuthModel.tokenType, oAuthModel.accessToken);
                     System.out.println(msg);
                     getFileContents(oAuthModel);
                 });
@@ -53,7 +50,7 @@ public class FileReadWriteClient {
                 System.out.println("What file content would you like to post?");
                 String newFileContent = scanner.nextLine();
                 authorizeUser(oAuthModel -> {
-                    String msg = String.format("Token received: %s %s", oAuthModel.token_type, oAuthModel.access_token);
+                    String msg = String.format("Token received: %s %s", oAuthModel.tokenType, oAuthModel.accessToken);
                     System.out.println(msg);
                     postFileContents(oAuthModel, newFileContent);
 
@@ -69,64 +66,26 @@ public class FileReadWriteClient {
     }
 
     private static void authorizeUser(final InitialAuthHandler.InitialAuthListener initialAuthListener) throws InterruptedException {
-
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
-
-        try {
-
-            Bootstrap b = new Bootstrap();
-            b.group(workerGroup)
-             .channel(NioSocketChannel.class)
-             .option(ChannelOption.SO_KEEPALIVE, true)
-             .handler(new ChannelInitializer<SocketChannel>() {
-                 @Override
-                 protected void initChannel(SocketChannel ch) throws Exception {
-                     ch.pipeline().addLast(new HttpClientCodec(),
-                                           new HttpObjectAggregator(MAX_BODY_LENGTH),
-                                           new InitialAuthHandler(initialAuthListener));
-                 }
-             });
-
-            ChannelFuture f = b.connect(HOST, PORT).sync();
-
-            f.channel().closeFuture().sync();
-
-        } finally {
-            workerGroup.shutdownGracefully();
-        }
+        startServer(new HttpClientCodec(),
+                    new HttpObjectAggregator(MAX_BODY_LENGTH),
+                    new InitialAuthHandler(initialAuthListener));
     }
 
     private static void getFileContents(OAuthModel authModel) {
-
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
-
-        try {
-
-            Bootstrap b = new Bootstrap();
-            b.group(workerGroup)
-             .channel(NioSocketChannel.class)
-             .option(ChannelOption.SO_KEEPALIVE, true)
-             .handler(new ChannelInitializer<SocketChannel>() {
-                 @Override
-                 protected void initChannel(SocketChannel ch) throws Exception {
-                     ch.pipeline().addLast(new HttpClientCodec(), new HttpObjectAggregator(MAX_BODY_LENGTH),
-                                           //new OAuthRenewalHandler(authModel),
-                                           new GetFileClientHandler(authModel));
-                 }
-             });
-
-            ChannelFuture f = b.connect(HOST, PORT).sync();
-
-            f.channel().closeFuture().sync();
-
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            workerGroup.shutdownGracefully();
-        }
+        startServer(new HttpClientCodec(),
+                    new HttpObjectAggregator(MAX_BODY_LENGTH),
+                    //new OAuthRenewalHandler(authModel)),
+                    new GetFileClientHandler(authModel));
     }
 
     private static void postFileContents(OAuthModel authModel, String newFileContent) {
+        startServer(new HttpClientCodec(),
+                    new HttpObjectAggregator(MAX_BODY_LENGTH),
+                    //new OAuthRenewalHandler(authModel)),
+                    new PostFileClientHandler(authModel, newFileContent));
+    }
+
+    private static void startServer(ChannelHandler... channelHandlers) {
 
         EventLoopGroup workerGroup = new NioEventLoopGroup();
 
@@ -139,9 +98,7 @@ public class FileReadWriteClient {
              .handler(new ChannelInitializer<SocketChannel>() {
                  @Override
                  protected void initChannel(SocketChannel ch) throws Exception {
-                     ch.pipeline().addLast(new HttpClientCodec(), new HttpObjectAggregator(MAX_BODY_LENGTH),
-                                           //new OAuthRenewalHandler(authModel),
-                                           new PostFileClientHandler(authModel, newFileContent));
+                     ch.pipeline().addLast(channelHandlers);
                  }
              });
 

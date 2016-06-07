@@ -1,4 +1,4 @@
-package com.mattchowning;
+package com.mattchowning.file_read_write;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;

@@ -1,6 +1,6 @@
-package com.mattchowning.file_read_write_server;
+package com.mattchowning.file_read_write.server;
 
-import com.mattchowning.BasicServer;
+import com.mattchowning.file_read_write.BasicServer;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
