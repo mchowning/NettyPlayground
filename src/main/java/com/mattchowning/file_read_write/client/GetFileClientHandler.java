@@ -1,24 +1,15 @@
 package com.mattchowning.file_read_write.client;
 
-import com.mattchowning.file_read_write.server.model.OAuthModel;
-
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
 import io.netty.handler.codec.http.FullHttpMessage;
 import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.util.CharsetUtil;
 
 public class GetFileClientHandler extends SimpleChannelInboundHandler<FullHttpResponse> {
-
-    private final OAuthModel oAuthModel;
-
-    public GetFileClientHandler(OAuthModel oAuthModel) {
-        this.oAuthModel = oAuthModel;
-    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -27,9 +18,8 @@ public class GetFileClientHandler extends SimpleChannelInboundHandler<FullHttpRe
 
     private void requestFileContent(ChannelHandlerContext ctx) {
         FullHttpMessage message = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "");
-        message.headers().add(HttpHeaderNames.AUTHORIZATION, oAuthModel.getEncodedAuthorizationHeader());
+        System.out.println("Requesting file content...");
         ctx.writeAndFlush(message);
-        System.out.println("file content requested");
     }
 
     @Override
@@ -37,7 +27,7 @@ public class GetFileClientHandler extends SimpleChannelInboundHandler<FullHttpRe
         // FIXME handle error response
         // FIXME handle file content as json content
         String fileText = getContent(msg);
-        System.out.println("file content received: " + fileText);
+        System.out.println("File content received: " + fileText);
         //ctx.close();
     }
 
@@ -47,6 +37,8 @@ public class GetFileClientHandler extends SimpleChannelInboundHandler<FullHttpRe
         return new String(msgBytes, CharsetUtil.UTF_8);
     }
 
+    // TODO Instead of this add a DefaultExceptionHandler to the the pipeline?
+    // https://bitbucket.org/adolgarev/nettybackend/src/19b0c41ddafc2921138595fdb750b09ff9668a58/src/main/java/test/backend/http/DefaultExceptionHandler.java?at=master&fileviewer=file-view-default
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         cause.printStackTrace();

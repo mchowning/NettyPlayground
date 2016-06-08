@@ -1,7 +1,5 @@
 package com.mattchowning.file_read_write.client;
 
-import com.mattchowning.file_read_write.server.model.OAuthModel;
-
 import java.util.Scanner;
 
 import io.netty.bootstrap.Bootstrap;
@@ -39,50 +37,38 @@ public class FileReadWriteClient {
         String action = scanner.nextLine();
         switch (action) {
             case GET_SELECTION:
-                System.out.println("get action fired");
-                authorizeUser(oAuthModel -> {
-                    String msg = String.format("Token received: %s %s", oAuthModel.tokenType, oAuthModel.accessToken);
-                    System.out.println(msg);
-                    getFileContents(oAuthModel);
-                });
+                System.out.println("Get action selected.");
+                getFileContents();
                 break;
             case POST_SELECTION:
+                System.out.println("Post action selected.");
                 System.out.println("What file content would you like to post?");
                 String newFileContent = scanner.nextLine();
-                authorizeUser(oAuthModel -> {
-                    String msg = String.format("Token received: %s %s", oAuthModel.tokenType, oAuthModel.accessToken);
-                    System.out.println(msg);
-                    postFileContents(oAuthModel, newFileContent);
-
-                });
-                System.out.println("post action fired");
+                postFileContents(newFileContent);
+                // FIXME get this working
                 break;
             case EXIT_SELECTION:
                 System.out.println("Exiting...");
                 break;
             default:
-                System.out.println("invalid selection");
+                System.out.println("Invalid selection.");
         }
     }
 
-    private static void authorizeUser(final InitialAuthHandler.InitialAuthListener initialAuthListener) throws InterruptedException {
+    private static void getFileContents() {
         startServer(new HttpClientCodec(),
                     new HttpObjectAggregator(MAX_BODY_LENGTH),
-                    new InitialAuthHandler(initialAuthListener));
+                    new OAuthClientCombinedHandler(),
+                    //new OAuthRenewalHandler(authModel)),
+                    new GetFileClientHandler());
     }
 
-    private static void getFileContents(OAuthModel authModel) {
+    private static void postFileContents(String newFileContent) {
         startServer(new HttpClientCodec(),
                     new HttpObjectAggregator(MAX_BODY_LENGTH),
+                    new OAuthClientCombinedHandler(),
                     //new OAuthRenewalHandler(authModel)),
-                    new GetFileClientHandler(authModel));
-    }
-
-    private static void postFileContents(OAuthModel authModel, String newFileContent) {
-        startServer(new HttpClientCodec(),
-                    new HttpObjectAggregator(MAX_BODY_LENGTH),
-                    //new OAuthRenewalHandler(authModel)),
-                    new PostFileClientHandler(authModel, newFileContent));
+                    new PostFileClientHandler(newFileContent));
     }
 
     private static void startServer(ChannelHandler... channelHandlers) {

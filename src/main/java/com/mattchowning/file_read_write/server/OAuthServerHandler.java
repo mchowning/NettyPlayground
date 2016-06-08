@@ -21,8 +21,15 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.ReferenceCountUtil;
 
-import static com.mattchowning.file_read_write.SharedConstants.*;
-import static com.mattchowning.file_read_write.server.ServerUtils.*;
+import static com.mattchowning.file_read_write.SharedConstants.GRANT_TYPE_KEY;
+import static com.mattchowning.file_read_write.SharedConstants.GRANT_TYPE_PASSWORD;
+import static com.mattchowning.file_read_write.SharedConstants.GSON;
+import static com.mattchowning.file_read_write.SharedConstants.OAUTH_PATH;
+import static com.mattchowning.file_read_write.SharedConstants.PASSWORD_KEY;
+import static com.mattchowning.file_read_write.SharedConstants.RESPONSE_CHARSET;
+import static com.mattchowning.file_read_write.SharedConstants.USERNAME_KEY;
+import static com.mattchowning.file_read_write.server.ServerUtils.getDate;
+import static com.mattchowning.file_read_write.server.ServerUtils.sendError;
 
 @ChannelHandler.Sharable
 public class OAuthServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {

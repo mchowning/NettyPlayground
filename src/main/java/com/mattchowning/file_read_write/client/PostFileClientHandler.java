@@ -1,7 +1,5 @@
 package com.mattchowning.file_read_write.client;
 
-import com.mattchowning.file_read_write.server.model.OAuthModel;
-
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -15,11 +13,9 @@ import io.netty.util.CharsetUtil;
 
 public class PostFileClientHandler extends SimpleChannelInboundHandler<FullHttpResponse> {
 
-    private final OAuthModel oAuthModel;
     private final String requestedNewFileContent;
 
-    public PostFileClientHandler(OAuthModel oAuthModel, String requestedNewFileContent) {
-        this.oAuthModel = oAuthModel;
+    public PostFileClientHandler(String requestedNewFileContent) {
         this.requestedNewFileContent = requestedNewFileContent;
     }
 
@@ -33,10 +29,9 @@ public class PostFileClientHandler extends SimpleChannelInboundHandler<FullHttpR
                                                              HttpMethod.POST,
                                                              "",
                                                              Unpooled.copiedBuffer(requestedNewFileContent, CharsetUtil.UTF_8));
-        message.headers().add(HttpHeaderNames.AUTHORIZATION, oAuthModel.getEncodedAuthorizationHeader());
         message.headers().add(HttpHeaderNames.CONTENT_LENGTH, requestedNewFileContent.length());
+        System.out.println("Posting updated file content...");
         ctx.writeAndFlush(message);
-        System.out.println("file content posted: " + requestedNewFileContent);
     }
 
     @Override
@@ -44,7 +39,7 @@ public class PostFileClientHandler extends SimpleChannelInboundHandler<FullHttpR
         // FIXME handle error response
         // FIXME handle file content as json content
         String fileText = getContent(msg);
-        System.out.println("file content received: " + fileText);
+        System.out.println("File content received: " + fileText);
         ctx.close();
     }
 
