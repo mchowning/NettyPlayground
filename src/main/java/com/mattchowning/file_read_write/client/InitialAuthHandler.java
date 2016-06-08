@@ -79,4 +79,10 @@ public class InitialAuthHandler extends SimpleChannelInboundHandler<FullHttpResp
             return null;
         }
     }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        cause.printStackTrace();
+        ctx.close();
+    }
 }

@@ -38,7 +38,7 @@ public class GetFileClientHandler extends SimpleChannelInboundHandler<FullHttpRe
         // FIXME handle file content as json content
         String fileText = getContent(msg);
         System.out.println("file content received: " + fileText);
-        ctx.close();
+        //ctx.close();
     }
 
     private String getContent(FullHttpResponse msg) {
