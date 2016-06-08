@@ -35,11 +35,15 @@ public class PostFileClientHandler extends SimpleChannelInboundHandler<FullHttpR
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, FullHttpResponse msg) throws Exception {
-        // FIXME handle error response
+    protected void channelRead0(ChannelHandlerContext ctx, FullHttpResponse response) throws Exception {
         // FIXME handle file content as json content
-        String fileText = getContent(msg);
-        System.out.println("File content received: " + fileText);
+        // FIXME this is duplicated in GetFileClientHandler
+        if (response.status().code() == 200) {
+            String fileText = getContent(response);
+            System.out.println("File content received: " + fileText);
+        } else {
+            System.out.println("Error retrieving file: " + response);
+        }
         ctx.close();
     }
 
