@@ -30,6 +30,7 @@ public class OAuthClientOutboundHandler extends ChannelOutboundHandlerAdapter im
     public void onOAuthReceived(ChannelHandlerContext ctx, OAuthModel oAuthModel) {
         this.oAuthModel = oAuthModel;
         if (pendingRequest != null) {
+            System.out.println("Loading previous request...");
             makeAuthorizedRequest(ctx, pendingRequest);
             pendingRequest = null;
         }
@@ -43,6 +44,7 @@ public class OAuthClientOutboundHandler extends ChannelOutboundHandlerAdapter im
                 pendingRequest = request;
                 requestOAuthToken(ctx);
             } else {
+                System.out.println("Already authorized...");
                 makeAuthorizedRequest(ctx, request);
             }
         }
@@ -50,7 +52,7 @@ public class OAuthClientOutboundHandler extends ChannelOutboundHandlerAdapter im
 
     private void makeAuthorizedRequest(ChannelHandlerContext ctx, FullHttpRequest request) {
         addAuthorizationHeader(request);
-        System.out.println("Issuing previous request...");
+        System.out.println("Continuing to issue request...");
         ctx.writeAndFlush(request);
     }
 
