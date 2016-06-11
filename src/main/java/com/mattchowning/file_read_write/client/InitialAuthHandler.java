@@ -6,22 +6,13 @@ import com.mattchowning.file_read_write.server.model.OAuthModel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.util.ReferenceCountUtil;
 
 import static com.mattchowning.file_read_write.SharedConstants.GSON;
 import static com.mattchowning.file_read_write.SharedConstants.RESPONSE_CHARSET;
 
 public class InitialAuthHandler extends SimpleChannelInboundHandler<FullHttpResponse> {
 
-    public interface Listener {
-        void onOAuthReceived(ChannelHandlerContext ctx, OAuthModel oAuthModel);
-    }
-
-    private final Listener listener;
-
-    public InitialAuthHandler(Listener listener) {
-        this.listener = listener;
-    }
+    private OAuthModel oAuthModel;
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpResponse response) throws Exception {
@@ -30,16 +21,14 @@ public class InitialAuthHandler extends SimpleChannelInboundHandler<FullHttpResp
             case 200:
                 OAuthModel oAuthModel = parseOAuthResponse(responseBody);
                 if (oAuthModel != null) {
+                    this.oAuthModel = oAuthModel;
                     System.out.println("OAuth response received");
-                    listener.onOAuthReceived(ctx, oAuthModel);
-                } else {
-                    ReferenceCountUtil.retain(response);
-                    ctx.fireChannelRead(response);
+                    break;
                 }
-                return;
             default:
                 System.out.println("OAuth ERROR: " + responseBody);
         }
+        ctx.close();
     }
 
     private OAuthModel parseOAuthResponse(String responseBody) {
@@ -54,5 +43,9 @@ public class InitialAuthHandler extends SimpleChannelInboundHandler<FullHttpResp
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         cause.printStackTrace();
         ctx.close();
+    }
+
+    public OAuthModel getOAuthModel() {
+        return oAuthModel;
     }
 }

@@ -7,12 +7,13 @@ import io.netty.util.CharsetUtil;
 
 public class ReadInboundFileClientHandler extends SimpleChannelInboundHandler<FullHttpResponse> {
 
+    private String fileContent;
+
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpResponse response) throws Exception {
         // FIXME handle file content as json content
         if (response.status().code() == 200) {
-            String fileText = getContent(response);
-            System.out.println("File content received: " + fileText);
+            fileContent = getContent(response);
         } else {
             System.out.println("Error retrieving file: " + response);
         }
@@ -31,5 +32,9 @@ public class ReadInboundFileClientHandler extends SimpleChannelInboundHandler<Fu
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         cause.printStackTrace();
         ctx.close();
+    }
+
+    public String getFileContent() {
+        return fileContent;
     }
 }
