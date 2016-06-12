@@ -1,6 +1,7 @@
 package com.mattchowning.file_read_write.client.calls;
 
-import com.mattchowning.file_read_write.server.model.OAuthModel;
+import com.mattchowning.file_read_write.client.FileReadWriteClient;
+import com.mattchowning.file_read_write.server.model.OAuthToken;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -19,8 +20,10 @@ public class PostFileCall extends FileCall {
 
     private final String newFileContent;
 
-    public PostFileCall(@NotNull OAuthModel oAuthModel, @NotNull String newFileContent) {
-        super(oAuthModel);
+    public PostFileCall(@NotNull OAuthToken oAuthToken,
+                        @NotNull String newFileContent,
+                        FileReadWriteClient client) {
+        super(oAuthToken, client);
         this.newFileContent = newFileContent;
     }
 
@@ -31,7 +34,7 @@ public class PostFileCall extends FileCall {
     }
 
     @Override
-    protected void makeRequest(ChannelOutboundInvoker ctx) {
+    protected void makeAuthenticatedRequest(ChannelOutboundInvoker ctx) {
         FullHttpMessage message = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1,
                                                              HttpMethod.POST,
                                                              "",
@@ -39,7 +42,7 @@ public class PostFileCall extends FileCall {
                                                                                    CharsetUtil.UTF_8));
         message.headers()
                .add(HttpHeaderNames.CONTENT_LENGTH, newFileContent.length())
-               .add(HttpHeaderNames.AUTHORIZATION, oAuthModel.getEncodedAuthorizationHeader());
+               .add(HttpHeaderNames.AUTHORIZATION, oAuthToken.getEncodedAuthorizationHeader());
         System.out.println("Posting updated file content...");
         ctx.writeAndFlush(message);
     }

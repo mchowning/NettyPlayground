@@ -1,11 +1,10 @@
 package com.mattchowning.file_read_write.server;
 
-import com.mattchowning.file_read_write.server.model.OAuthModel;
+import com.mattchowning.file_read_write.server.model.OAuthToken;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
@@ -21,83 +20,122 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.util.ReferenceCountUtil;
 
-import static com.mattchowning.file_read_write.SharedConstants.GRANT_TYPE_KEY;
-import static com.mattchowning.file_read_write.SharedConstants.GRANT_TYPE_PASSWORD;
-import static com.mattchowning.file_read_write.SharedConstants.GSON;
-import static com.mattchowning.file_read_write.SharedConstants.OAUTH_PATH;
-import static com.mattchowning.file_read_write.SharedConstants.PASSWORD_KEY;
-import static com.mattchowning.file_read_write.SharedConstants.RESPONSE_CHARSET;
-import static com.mattchowning.file_read_write.SharedConstants.USERNAME_KEY;
+import static com.mattchowning.file_read_write.SharedConstants.*;
 import static com.mattchowning.file_read_write.server.ServerUtils.getDate;
 import static com.mattchowning.file_read_write.server.ServerUtils.sendError;
 
 @ChannelHandler.Sharable
 public class OAuthServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
-    private Set<String> issuedTokens = new HashSet<>();
+    private Map<String, OAuthToken> issuedTokens = new HashMap<>();
+    private Map<String, OAuthToken> issuedRefreshTokens = new HashMap<>();
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
-        if (isOAuthRequest(request)) {
-            processOAuthRequest(ctx, request);
-        } else if (isAuthorized(request)) {
-            ReferenceCountUtil.retain(request);
-            ctx.fireChannelRead(request);
-        } else {
-            sendError(ctx, HttpResponseStatus.UNAUTHORIZED, "invalid_client", "client not authorized");
-        }
+        String path = new QueryStringDecoder(request.uri()).path();
 
+        switch(path) {
+            case OAUTH_PATH:
+                processOAuthRequest(ctx, request);
+                break;
+            default:
+                if (hasValidToken(ctx, request)) {
+                    forwardRequest(ctx, request);
+                }
+        }
     }
 
-    private boolean isAuthorized(FullHttpRequest request) {
+    private boolean hasValidToken(ChannelHandlerContext ctx, FullHttpRequest request) {
+        boolean isAuthorized = false;
         if (request.headers().contains(HttpHeaderNames.AUTHORIZATION)) {
             String encodedAuthHeader = request.headers().get(HttpHeaderNames.AUTHORIZATION);
-            OAuthModel oAuthModel = OAuthModel.fromEncodedAuthorizationHeader(encodedAuthHeader);
-            return isAuthorized(oAuthModel);
+            OAuthToken receivedOAuthToken = OAuthToken.fromEncodedAuthorizationHeader(encodedAuthHeader);
+            if (!receivedOAuthToken.hasValidTokenType()) {
+                sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_grant", "Bearer token type required");
+            } else if (!issuedTokens.containsKey(receivedOAuthToken.accessToken)) {
+                sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_grant", "Invalid token");
+            } else if (issuedTokens.get(receivedOAuthToken.accessToken).isExpired()) { // use saved token to check expiration
+                sendError(ctx, HttpResponseStatus.BAD_REQUEST, "Token expired");
+            } else {
+                isAuthorized = true;
+            }
+        } else {
+            sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "authorization header required");
         }
-        return false;
+        return isAuthorized;
     }
 
-    private boolean isAuthorized(OAuthModel oAuthModel) {
-        if (oAuthModel.hasValidTokenType()) {
-            return issuedTokens.contains(oAuthModel.accessToken);
-        } else {
-            throw new RuntimeException("Bearer token type required");
-        }
+    private void forwardRequest(ChannelHandlerContext ctx, FullHttpRequest request) {
+        ReferenceCountUtil.retain(request);
+        ctx.fireChannelRead(request);
     }
 
     private void processOAuthRequest(ChannelHandlerContext ctx, FullHttpRequest request) {
-        if (checkOAuthRequest(ctx, request)) {
-            String newToken = getNewToken();
-            issuedTokens.add(newToken);
-            respondWithNewOAuthToken(ctx, newToken);
+        Map<String, List<String>> params = new QueryStringDecoder(request.uri()).parameters();
+        if (request.method() == HttpMethod.POST) {
+            if (params.containsKey(GRANT_TYPE_KEY)) {
+                if (hasParam(params, GRANT_TYPE_KEY, GRANT_TYPE_PASSWORD)) {
+                    processPasswordRequest(ctx, params);
+                } else if (hasParam(params, GRANT_TYPE_KEY, GRANT_TYPE_REFRESH_TOKEN)) {
+                    processRefreshRequest(ctx, params);
+                } else {
+                    String errorDescription = "oauth request must specify grant_type of password or refresh_token";
+                    sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", errorDescription);
+                }
+            } else {
+                String errorDescription = "oauth request must specify grant_type";
+                sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", errorDescription);
+            }
+        } else {
+            sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "oauth request must be POST");
         }
     }
 
-    private boolean checkOAuthRequest(ChannelHandlerContext ctx, FullHttpRequest request) {
-        boolean isApproved = false;
-        Map<String, List<String>> params = new QueryStringDecoder(request.uri()).parameters();
-        if (request.method() != HttpMethod.POST) {
-            sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "oauth request must be POST");
-        } else if (!hasParam(params, GRANT_TYPE_KEY, GRANT_TYPE_PASSWORD)) {
-            String errorDescription = "oauth request must specify grant_type of password";
-            sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", errorDescription);
-        } else if (!hasParamKey(params, USERNAME_KEY)) {
+    private void processPasswordRequest(ChannelHandlerContext ctx,
+                                        Map<String, List<String>> params) {
+        if (!hasParamKey(params, USERNAME_KEY)) {
             String errorDescription = "oauth request must specify username";
             sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", errorDescription);
         } else if (!hasParamKey(params, PASSWORD_KEY)) {
             String errorDescription = "oauth request must specify password";
             sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", errorDescription);
-        } else if (isShadyUser(params)) {
+        } else if (isUserShady(params)) {
             sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_client", "user is shady");
-        } else {
-            isApproved = true;
+        }  else {
+            respondWithNewOAuthToken(ctx);
         }
-        return isApproved;
     }
 
-    private void respondWithNewOAuthToken(ChannelHandlerContext ctx, String token) {
-        String body = GSON.toJson(new OAuthModel(token));
+    private void processRefreshRequest(ChannelHandlerContext ctx,
+                                       Map<String, List<String>> params) {
+        if (params.containsKey(REFRESH_TOKEN_KEY)) {
+            String refreshTokenInRequest = params.get(REFRESH_TOKEN_KEY).get(0);
+            if (issuedRefreshTokens.containsKey(refreshTokenInRequest)) {
+                invalidateAssociatedOAuthToken(refreshTokenInRequest);
+                respondWithNewOAuthToken(ctx);
+            } else {
+                sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "invalid refresh_token provided");
+            }
+        } else {
+            sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "no refresh_token provided");
+        }
+    }
+
+    private void respondWithNewOAuthToken(ChannelHandlerContext ctx) {
+        OAuthToken newToken = OAuthToken.generateNew();
+        issuedTokens.put(newToken.accessToken, newToken);
+        issuedRefreshTokens.put(newToken.refreshToken, newToken);
+        respondWithOAuthToken(ctx, newToken);
+    }
+
+    private void invalidateAssociatedOAuthToken(String refreshToken) {
+        OAuthToken oldToken = issuedRefreshTokens.get(refreshToken);
+        issuedTokens.remove(oldToken.accessToken);
+        issuedRefreshTokens.remove(oldToken.refreshToken);
+    }
+
+    private void respondWithOAuthToken(ChannelHandlerContext ctx, OAuthToken token) {
+        String body = GSON.toJson(token);
 
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
                                                                 HttpResponseStatus.OK,
@@ -107,12 +145,6 @@ public class OAuthServerHandler extends SimpleChannelInboundHandler<FullHttpRequ
         response.headers().set(HttpHeaderNames.CONTENT_LENGTH, body.length());
 
         ctx.writeAndFlush(response);
-    }
-
-    private String getNewToken() {
-        String token = TokenGenerator.generateNew();
-        issuedTokens.add(token);
-        return token;
     }
 
     private boolean hasParamKey(Map<String, List<String>> params, String key) {
@@ -126,17 +158,8 @@ public class OAuthServerHandler extends SimpleChannelInboundHandler<FullHttpRequ
                params.get(key).contains(value);
     }
 
-    private boolean isShadyUser(Map<String, List<String>> params) {
+    private boolean isUserShady(Map<String, List<String>> params) {
         return hasParam(params, USERNAME_KEY, "sleepynate");
-    }
-
-    private boolean isOAuthRequest(FullHttpRequest request) {
-        if (request != null) {
-            String path = new QueryStringDecoder(request.uri()).path();
-            return OAUTH_PATH.equals(path);
-        } else {
-            return false;
-        }
     }
 
     @Override

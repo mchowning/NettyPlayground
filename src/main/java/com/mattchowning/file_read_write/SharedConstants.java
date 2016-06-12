@@ -13,8 +13,10 @@ public class SharedConstants {
     public static final String OAUTH_PATH = "/oauth";
     public static final String GRANT_TYPE_KEY = "grant_type";
     public static final String GRANT_TYPE_PASSWORD = "password";
+    public static final String GRANT_TYPE_REFRESH_TOKEN = "refresh_token";
     public static final String PASSWORD_KEY = "password";
     public static final String USERNAME_KEY = "username";
+    public static final String REFRESH_TOKEN_KEY = "refresh_token";
     public static final Charset RESPONSE_CHARSET = CharsetUtil.UTF_8;
 
     public static final Gson GSON = new GsonBuilder()

@@ -1,29 +1,54 @@
 package com.mattchowning.file_read_write.server.model;
 
+import com.mattchowning.file_read_write.server.TokenGenerator;
+
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Base64;
 
 import io.netty.util.CharsetUtil;
 
-public class OAuthModel {
+public class OAuthToken {
+
+    public static final long TOKEN_DURATION_IN_SECONDS = 15;
 
     private static final String PROPER_TOKEN_TYPE = "Bearer";
 
     public final String accessToken;
+    public final String refreshToken;
     public final String tokenType;
+    public final Long expiresIn = TOKEN_DURATION_IN_SECONDS;
+    public final Long generatedTime;
 
-    public OAuthModel(String accessToken) {
-        this(accessToken, PROPER_TOKEN_TYPE);
+    public static OAuthToken generateNew() {
+        String tokenValue = TokenGenerator.generateNew();
+        String refreshTokenValue = TokenGenerator.generateNew();
+        return new OAuthToken(tokenValue, refreshTokenValue);
     }
 
-    public OAuthModel(String accessToken, String tokenType) {
+    private OAuthToken(String accessToken, String refreshToken) {
+        this(accessToken, refreshToken, PROPER_TOKEN_TYPE);
+    }
+
+    private OAuthToken(String accessToken, String refreshToken, String tokenType) {
         this.accessToken = accessToken;
+        this.refreshToken = refreshToken;
         this.tokenType = tokenType;
+        this.generatedTime = getCurrentTime();
     }
 
-    public static OAuthModel fromEncodedAuthorizationHeader(String encodedAuthorizationHeader) {
+    private long getCurrentTime() {
+        return ZonedDateTime.now(ZoneOffset.UTC).toEpochSecond();
+    }
+
+    public boolean isExpired() {
+        return getCurrentTime() - generatedTime > TOKEN_DURATION_IN_SECONDS;
+    }
+
+    public static OAuthToken fromEncodedAuthorizationHeader(String encodedAuthorizationHeader) {
         String tokenType = getTokenType(encodedAuthorizationHeader);
         String token = getAccessToken(encodedAuthorizationHeader);
-        return new OAuthModel(token, tokenType);
+        return new OAuthToken(token, tokenType);
     }
 
     public boolean hasValidTokenType() {

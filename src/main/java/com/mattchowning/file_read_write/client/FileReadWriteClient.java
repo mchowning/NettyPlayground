@@ -1,10 +1,7 @@
 package com.mattchowning.file_read_write.client;
 
-import com.mattchowning.file_read_write.client.calls.Call;
-import com.mattchowning.file_read_write.client.calls.GetFileCall;
-import com.mattchowning.file_read_write.client.calls.GetOAuthCall;
-import com.mattchowning.file_read_write.client.calls.PostFileCall;
-import com.mattchowning.file_read_write.server.model.OAuthModel;
+import com.mattchowning.file_read_write.client.calls.*;
+import com.mattchowning.file_read_write.server.model.OAuthToken;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -12,25 +9,33 @@ import java.util.function.Consumer;
 
 public class FileReadWriteClient {
 
-    private OAuthModel oAuthModel;
+    private OAuthToken oAuthToken;
 
     void retrieveFileContent(@NotNull Consumer<String> consumer) {
-        Call<String> call = new GetFileCall(oAuthModel);
+        Call<String> call = new GetFileCall(oAuthToken, this);
         call.execute(consumer);
     }
 
     void updateFileContent(@NotNull String newFileContent, @NotNull Consumer<String> consumer) {
-        Call<String> call = new PostFileCall(oAuthModel, newFileContent);
+        Call<String> call = new PostFileCall(oAuthToken, newFileContent, this);
         call.execute(consumer);
     }
 
-    void retrieveOAuthToken(Consumer<OAuthModel> consumer,
+    void retrieveOAuthToken(Consumer<OAuthToken> consumer,
                             String username,
                             String password) {
-        Call<OAuthModel> call = new GetOAuthCall(username, password);
-        call.execute(oAuthModel -> {
-            this.oAuthModel = oAuthModel;
-            consumer.accept(oAuthModel);
+        Call<OAuthToken> call = new GetOAuthCall(username, password);
+        call.execute(oAuthToken -> {
+            this.oAuthToken = oAuthToken;
+            consumer.accept(oAuthToken);
+        });
+    }
+
+    public void refreshOAuthToken(Consumer<OAuthToken> consumer) {
+        Call<OAuthToken> call = new RefreshOAuthTokenCall(oAuthToken.refreshToken);
+        call.execute(oAuthToken -> {
+            this.oAuthToken = oAuthToken;
+            consumer.accept(oAuthToken);
         });
     }
 }

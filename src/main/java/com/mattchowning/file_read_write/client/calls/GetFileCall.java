@@ -1,6 +1,7 @@
 package com.mattchowning.file_read_write.client.calls;
 
-import com.mattchowning.file_read_write.server.model.OAuthModel;
+import com.mattchowning.file_read_write.client.FileReadWriteClient;
+import com.mattchowning.file_read_write.server.model.OAuthToken;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -14,9 +15,9 @@ import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 
 public class GetFileCall extends FileCall {
-
-    public GetFileCall(@NotNull OAuthModel oAuthModel) {
-        super(oAuthModel);
+                                                                // FIXME
+    public GetFileCall(@NotNull OAuthToken oAuthToken, @NotNull FileReadWriteClient client) {
+        super(oAuthToken, client);
     }
 
     @Override
@@ -26,12 +27,12 @@ public class GetFileCall extends FileCall {
     }
 
     @Override
-    protected void makeRequest(ChannelOutboundInvoker ctx) {
+    protected void makeAuthenticatedRequest(ChannelOutboundInvoker ctx) {
         FullHttpMessage message = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1,
                                                              HttpMethod.GET,
                                                              "");
         message.headers().add(HttpHeaderNames.AUTHORIZATION,
-                              oAuthModel.getEncodedAuthorizationHeader());
+                              oAuthToken.getEncodedAuthorizationHeader());
         ctx.writeAndFlush(message);
     }
 }

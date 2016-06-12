@@ -12,10 +12,11 @@ public class ReadInboundFileClientHandler extends SimpleChannelInboundHandler<Fu
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpResponse response) throws Exception {
         // FIXME handle file content as json content
+        String responseContent = getContent(response);
         if (response.status().code() == 200) {
-            fileContent = getContent(response);
+            fileContent = responseContent;
         } else {
-            System.out.println("Error retrieving file: " + response);
+            System.out.println("Error retrieving file: " + responseContent);
         }
         ctx.close();
     }
