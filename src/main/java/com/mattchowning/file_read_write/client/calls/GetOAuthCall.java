@@ -8,6 +8,7 @@ import java.util.function.Supplier;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelOutboundInvoker;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.multipart.HttpPostRequestEncoder;
 
 import static com.mattchowning.file_read_write.SharedConstants.*;
 
@@ -42,18 +43,25 @@ public class GetOAuthCall extends Call<OAuthToken> {
     @Override
     protected void makeRequest(ChannelOutboundInvoker ctx) {
         System.out.println("Requesting OAuth token...");
-        FullHttpRequest message = getOAuthTokenRequest(username, password);
-        ctx.writeAndFlush(message);
+        try {
+            FullHttpRequest request = getOAuthTokenRequest();
+            ctx.writeAndFlush(request);
+        } catch (HttpPostRequestEncoder.ErrorDataEncoderException e) {
+            e.printStackTrace();
+            ctx.close();
+        }
     }
 
-    private FullHttpRequest getOAuthTokenRequest(String username, String password) {
-        QueryStringEncoder queryStringEncoder = new QueryStringEncoder(OAUTH_PATH);
-        queryStringEncoder.addParam(GRANT_TYPE_KEY, GRANT_TYPE_PASSWORD);
-        queryStringEncoder.addParam(USERNAME_KEY, username);
-        queryStringEncoder.addParam(PASSWORD_KEY, password);
-        String uriString = queryStringEncoder.toString();
-        return new DefaultFullHttpRequest(HttpVersion.HTTP_1_1,
-                                          HttpMethod.POST,
-                                          uriString);
+    private FullHttpRequest getOAuthTokenRequest() throws HttpPostRequestEncoder.ErrorDataEncoderException {
+        FullHttpRequest request =  new DefaultFullHttpRequest(HttpVersion.HTTP_1_1,
+                                                              HttpMethod.POST,
+                                                              OAUTH_PATH);
+
+        HttpPostRequestEncoder postRequestEncoder = new HttpPostRequestEncoder(request, false);
+        postRequestEncoder.addBodyAttribute(GRANT_TYPE_KEY, GRANT_TYPE_PASSWORD);
+        postRequestEncoder.addBodyAttribute(USERNAME_KEY, username);
+        postRequestEncoder.addBodyAttribute(PASSWORD_KEY, password);
+        postRequestEncoder.finalizeRequest();
+        return request;
     }
 }

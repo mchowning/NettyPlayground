@@ -8,6 +8,7 @@ import java.util.function.Supplier;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelOutboundInvoker;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.multipart.HttpPostRequestEncoder;
 
 import static com.mattchowning.file_read_write.SharedConstants.*;
 
@@ -39,32 +40,23 @@ public class RefreshOAuthTokenCall extends Call<OAuthToken> {
     @Override
     protected void makeRequest(ChannelOutboundInvoker ctx) {
         System.out.println("Attempting to refresh OAuth token...");
-        FullHttpRequest request = getRefreshTokenRequest();
-        ctx.writeAndFlush(request);
+        try {
+            FullHttpRequest request = getRefreshTokenRequest();
+            ctx.writeAndFlush(request);
+        } catch (HttpPostRequestEncoder.ErrorDataEncoderException e) {
+            e.printStackTrace();
+            ctx.close();
+        }
     }
 
-    /*
-    FIXME all of these strings should be query encoded content, not urls
-
-    For example, the client makes the following HTTP request using
-    transport-layer security (with extra line breaks for display purposes
-            only):
-
-    POST /token HTTP/1.1
-    Host: server.example.com
-    Authorization: Basic czZCaGRSa3F0MzpnWDFmQmF0M2JW
-    Content-Type: application/x-www-form-urlencoded
-
-    grant_type=refresh_token&refresh_token=tGzv3JOkF0XG5Qx2TlKWIA
-    */
-
-    private FullHttpRequest getRefreshTokenRequest() {
-        QueryStringEncoder queryStringEncoder = new QueryStringEncoder(OAUTH_PATH);
-        queryStringEncoder.addParam(GRANT_TYPE_KEY, GRANT_TYPE_REFRESH_TOKEN);
-        queryStringEncoder.addParam(REFRESH_TOKEN_KEY, refreshToken);
-        String uriString = queryStringEncoder.toString();
-        return new DefaultFullHttpRequest(HttpVersion.HTTP_1_1,
-                                          HttpMethod.POST,
-                                          uriString);
+    private FullHttpRequest getRefreshTokenRequest() throws HttpPostRequestEncoder.ErrorDataEncoderException {
+        FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1,
+                                                             HttpMethod.POST,
+                                                             OAUTH_PATH);
+        HttpPostRequestEncoder postRequestEncoder = new HttpPostRequestEncoder(request, false);
+        postRequestEncoder.addBodyAttribute(GRANT_TYPE_KEY, GRANT_TYPE_REFRESH_TOKEN);
+        postRequestEncoder.addBodyAttribute(REFRESH_TOKEN_KEY, refreshToken);
+        postRequestEncoder.finalizeRequest();
+        return request;
     }
 }
