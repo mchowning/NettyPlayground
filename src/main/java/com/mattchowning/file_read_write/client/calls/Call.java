@@ -26,21 +26,20 @@ public abstract class Call<T> {
     protected abstract void makeRequest(ChannelOutboundInvoker ctx);
 
     public void execute(Consumer<T> resultConsumer) {
-        ChannelFutureListener completionListener = f -> resultConsumer.accept(getResultSupplier().get());
-        startClient(this::makeRequest, getChannelHandlers(), completionListener);
+        ChannelFutureListener completionListener = ignored ->
+                resultConsumer.accept(getResultSupplier().get());
+        startClient(completionListener);
     }
 
-    private void startClient(Consumer<ChannelOutboundInvoker> httpCall,
-                             ChannelHandler[] handlers,
-                             ChannelFutureListener completionListener) {
+    private void startClient(ChannelFutureListener completionListener) {
 
         EventLoopGroup workerGroup = new NioEventLoopGroup();
 
         try {
-            ChannelFuture f = bootstrap(workerGroup, handlers).connect(HOST, PORT)
-                                                              .sync();
+            ChannelFuture f = bootstrap(workerGroup).connect(HOST, PORT)
+                                                    .sync();
             f.channel().closeFuture().addListener(completionListener);
-            httpCall.accept(f.channel());
+            makeRequest(f.channel());
             f.channel().closeFuture().sync();
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -49,7 +48,7 @@ public abstract class Call<T> {
         }
     }
 
-    private Bootstrap bootstrap(EventLoopGroup workerGroup, ChannelHandler[] handlers) {
+    private Bootstrap bootstrap(EventLoopGroup workerGroup) {
         return new Bootstrap()
                 .group(workerGroup)
                 .channel(NioSocketChannel.class)
@@ -57,7 +56,7 @@ public abstract class Call<T> {
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
-                        ch.pipeline().addLast(handlers);
+                        ch.pipeline().addLast(getChannelHandlers());
                     }
                 });
     }

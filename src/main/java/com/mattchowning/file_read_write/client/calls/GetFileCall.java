@@ -15,7 +15,7 @@ import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
 
 public class GetFileCall extends FileCall {
-                                                                // FIXME
+
     public GetFileCall(@NotNull OAuthToken oAuthToken, @NotNull FileReadWriteClient client) {
         super(oAuthToken, client);
     }

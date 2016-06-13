@@ -10,8 +10,6 @@ import io.netty.handler.codec.http.HttpServerCodec;
 public class FileReadWriteServer extends BasicServer {
 
     private static final int MAX_BODY_LENGTH = 15000;
-    // TODO could just statically store a tokenStore Set here instead
-    //private static final FileReadWriteServerHandler FILE_READ_WRITE_SERVER_HANDLER = new FileReadWriteServerHandler();
     private static final OAuthServerHandler O_AUTH_SERVER_HANDLER = new OAuthServerHandler();
 
     public FileReadWriteServer(int port) {

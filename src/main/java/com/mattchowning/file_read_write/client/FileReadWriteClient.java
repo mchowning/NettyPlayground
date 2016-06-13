@@ -10,8 +10,9 @@ import java.util.function.Consumer;
 public class FileReadWriteClient {
 
     private OAuthToken oAuthToken;
+    private Consumer<OAuthToken> setOAuthToken = token -> this.oAuthToken = token;
 
-    void retrieveFileContent(@NotNull Consumer<String> consumer) {
+    void getFileContent(@NotNull Consumer<String> consumer) {
         Call<String> call = new GetFileCall(oAuthToken, this);
         call.execute(consumer);
     }
@@ -21,21 +22,15 @@ public class FileReadWriteClient {
         call.execute(consumer);
     }
 
-    void retrieveOAuthToken(Consumer<OAuthToken> consumer,
-                            String username,
-                            String password) {
+    void getOAuthToken(@NotNull Consumer<OAuthToken> externalConsumer,
+                       String username,
+                       String password) {
         Call<OAuthToken> call = new GetOAuthCall(username, password);
-        call.execute(oAuthToken -> {
-            this.oAuthToken = oAuthToken;
-            consumer.accept(oAuthToken);
-        });
+        call.execute(setOAuthToken.andThen(externalConsumer));
     }
 
-    public void refreshOAuthToken(Consumer<OAuthToken> consumer) {
+    public void refreshOAuthToken(@NotNull Consumer<OAuthToken> externalConsumer) {
         Call<OAuthToken> call = new RefreshOAuthTokenCall(oAuthToken.refreshToken);
-        call.execute(oAuthToken -> {
-            this.oAuthToken = oAuthToken;
-            consumer.accept(oAuthToken);
-        });
+        call.execute(setOAuthToken.andThen(externalConsumer));
     }
 }

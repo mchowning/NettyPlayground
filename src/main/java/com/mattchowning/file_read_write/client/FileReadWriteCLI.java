@@ -16,7 +16,7 @@ public class FileReadWriteCLI {
     private static void requestAuth(FileReadWriteClient client) {
         String username = getUserInput("username");
         String password = getUserInput("password");
-        client.retrieveOAuthToken(oAuthModel -> {
+        client.getOAuthToken(oAuthModel -> {
             if (oAuthModel == null) {
                 System.out.println("Unable to authenticate. Try again.");
                 requestAuth(client);
@@ -29,7 +29,7 @@ public class FileReadWriteCLI {
     private static void getUserSelection(FileReadWriteClient client) {
         switch (askForUserSelection()) {
             case GET_SELECTION:
-                client.retrieveFileContent(contents -> {
+                client.getFileContent(contents -> {
                     System.out.println("file contents: " + contents);
                     getUserSelection(client);
                 });

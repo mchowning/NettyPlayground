@@ -2,6 +2,8 @@ package com.mattchowning.file_read_write.server.model;
 
 import com.mattchowning.file_read_write.server.TokenGenerator;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Base64;
@@ -10,7 +12,7 @@ import io.netty.util.CharsetUtil;
 
 public class OAuthToken {
 
-    public static final long TOKEN_DURATION_IN_SECONDS = 15;
+    public static final long TOKEN_DURATION_IN_SECONDS = 10;
 
     private static final String PROPER_TOKEN_TYPE = "Bearer";
 
@@ -56,20 +58,25 @@ public class OAuthToken {
     }
 
     public String getEncodedAuthorizationHeader() {
-        // FIXME why is UTF-8 right here?
         byte[] encodedTokenBytes = Base64.getEncoder().encode(accessToken.getBytes());
         return String.format("%s %s", tokenType, new String(encodedTokenBytes, CharsetUtil.UTF_8));
     }
 
-    public static String getAccessToken(String authorizationHeader) {
+    @NotNull
+    private static String getAccessToken(@NotNull String authorizationHeader) {
         String[] authHeaderArray = authorizationHeader.split("\\s");
-        String encodedToken = authHeaderArray[1]; // TODO catch exception?
-        byte[] decodedTokenBytes = Base64.getDecoder().decode(encodedToken);
-        return new String(decodedTokenBytes, CharsetUtil.UTF_8);
+        if (authHeaderArray.length < 2) {
+            return "";
+        } else {
+            String encodedToken = authHeaderArray[1];
+            byte[] decodedTokenBytes = Base64.getDecoder().decode(encodedToken);
+            return new String(decodedTokenBytes, CharsetUtil.UTF_8);
+        }
     }
 
-    private static String getTokenType(String encodedAuthorizationHeader) {
+    @NotNull
+    private static String getTokenType(@NotNull String encodedAuthorizationHeader) {
         String[] authHeaderElements = encodedAuthorizationHeader.split("\\s");
-        return authHeaderElements[0]; // TODO catch exception?
+        return authHeaderElements[0];
     }
 }

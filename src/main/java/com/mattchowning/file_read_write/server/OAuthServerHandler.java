@@ -2,8 +2,11 @@ package com.mattchowning.file_read_write.server;
 
 import com.mattchowning.file_read_write.server.model.OAuthToken;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
@@ -24,7 +27,6 @@ public class OAuthServerHandler extends SimpleChannelInboundHandler<FullHttpRequ
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         String path = new QueryStringDecoder(request.uri()).path();
-
         switch(path) {
             case OAUTH_PATH:
                 processOAuthRequest(ctx, request);
@@ -68,35 +70,31 @@ public class OAuthServerHandler extends SimpleChannelInboundHandler<FullHttpRequ
         } else {
             HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(request);
             String grantType = getValue(decoder, GRANT_TYPE_KEY);
-            if (grantType == null) {
-                String errorDescription = "oauth request must specify grant_type";
-                sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", errorDescription);
-            } else {
-                switch (grantType) {
-                    case GRANT_TYPE_PASSWORD:
-                        processPasswordRequest(ctx, decoder);
-                        break;
-                    case GRANT_TYPE_REFRESH_TOKEN:
-                        processRefreshRequest(ctx, decoder);
-                        break;
-                    default:
-                        String errorDescription = "oauth request must specify grant_type of password or refresh_token";
-                        sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", errorDescription);
-                }
+            switch (grantType) {
+                case GRANT_TYPE_PASSWORD:
+                    processPasswordRequest(ctx, decoder);
+                    break;
+                case GRANT_TYPE_REFRESH_TOKEN:
+                    processRefreshRequest(ctx, decoder);
+                    break;
+                default:
+                    String errorDescription = String.format("oauth request must specify grant_type of %s or %s",
+                                                            GRANT_TYPE_PASSWORD,
+                                                            GRANT_TYPE_REFRESH_TOKEN);
+                    sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", errorDescription);
             }
         }
     }
 
     private void processPasswordRequest(ChannelHandlerContext ctx,
                                         HttpPostRequestDecoder decoder) throws IOException {
-                                        //Map<String, List<String>> params) {
 
         String username = getValue(decoder, USERNAME_KEY);
         String password = getValue(decoder, PASSWORD_KEY);
-        if (username == null) {
+        if (username.isEmpty()) {
             String errorDescription = "oauth request must specify username";
             sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", errorDescription);
-        } else if (password == null) {
+        } else if (password.isEmpty()) {
             String errorDescription = "oauth request must specify password";
             sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", errorDescription);
         } else if (isUserShady(username, password)) {
@@ -106,21 +104,22 @@ public class OAuthServerHandler extends SimpleChannelInboundHandler<FullHttpRequ
         }
     }
 
+    @NotNull
     private String getValue(HttpPostRequestDecoder decoder, String key) throws IOException {
+        String result = null;
         InterfaceHttpData bodyHttpDataForKey = decoder.getBodyHttpData(key);
         if (bodyHttpDataForKey != null && bodyHttpDataForKey instanceof Attribute) {
-            return ((Attribute) bodyHttpDataForKey).getValue();
+            result = ((Attribute) bodyHttpDataForKey).getValue();
         }
-        return null;
+        if (result == null) result = "";
+        return result;
     }
 
     private void processRefreshRequest(ChannelHandlerContext ctx,
                                        HttpPostRequestDecoder decoder) throws IOException {
         String refreshToken = getValue(decoder, REFRESH_TOKEN_KEY);
-        if (refreshToken == null) {
-            sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "no refresh_token provided");
-        } else if (!issuedRefreshTokens.containsKey(refreshToken)) {
-            sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "invalid refresh_token provided");
+        if (!issuedRefreshTokens.containsKey(refreshToken)) {
+            sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "valid refresh_token not provided");
         } else {
             invalidateAssociatedOAuthToken(refreshToken);
             respondWithNewOAuthToken(ctx);

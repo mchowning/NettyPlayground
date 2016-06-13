@@ -1,40 +1,17 @@
 package com.mattchowning.file_read_write.client.calls;
 
-import com.mattchowning.file_read_write.client.InitialAuthHandler;
-import com.mattchowning.file_read_write.server.model.OAuthToken;
-
-import java.util.function.Supplier;
-
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelOutboundInvoker;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.multipart.HttpPostRequestEncoder;
 
 import static com.mattchowning.file_read_write.SharedConstants.*;
 
-public class RefreshOAuthTokenCall extends Call<OAuthToken> {
+public class RefreshOAuthTokenCall extends OAuthCall {
 
     private final String refreshToken;
-    private final ChannelHandler[] handlers;
-    private final Supplier<OAuthToken> resultSupplier;
 
     public RefreshOAuthTokenCall(String refreshToken) {
         this.refreshToken = refreshToken;
-        InitialAuthHandler initialAuthHandler = new InitialAuthHandler();
-        handlers = new ChannelHandler[] { new HttpClientCodec(),
-                                          new HttpObjectAggregator(MAX_BODY_LENGTH),
-                                          initialAuthHandler };
-        resultSupplier = initialAuthHandler::getOAuthModel;
-    }
-
-    @Override
-    protected ChannelHandler[] getChannelHandlers() {
-        return handlers;
-    }
-
-    @Override
-    protected Supplier<OAuthToken> getResultSupplier() {
-        return resultSupplier;
     }
 
     @Override

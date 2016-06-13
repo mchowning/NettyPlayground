@@ -22,7 +22,7 @@ public class InitialAuthHandler extends SimpleChannelInboundHandler<FullHttpResp
                 OAuthToken oAuthToken = parseOAuthResponse(responseBody);
                 if (oAuthToken != null) {
                     this.oAuthToken = oAuthToken;
-                    System.out.println("OAuth response received");
+                    System.out.println("OAuth response received.");
                     break;
                 }
             default:
