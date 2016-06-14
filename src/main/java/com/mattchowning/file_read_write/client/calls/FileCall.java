@@ -2,7 +2,7 @@ package com.mattchowning.file_read_write.client.calls;
 
 import com.mattchowning.file_read_write.SharedConstants;
 import com.mattchowning.file_read_write.client.FileReadWriteClient;
-import com.mattchowning.file_read_write.client.handler.ReadInboundFileClientHandler;
+import com.mattchowning.file_read_write.client.handler.ClientReadInboundFileHandler;
 import com.mattchowning.file_read_write.server.model.OAuthToken;
 
 import org.jetbrains.annotations.NotNull;
@@ -27,11 +27,12 @@ public abstract class FileCall extends Call<String> {
         super(SharedConstants.FILE_HOST, SharedConstants.FILE_PORT);
         this.oAuthToken = oAuthToken;
         this.client = client;
-        ReadInboundFileClientHandler readInboundFileClientHandler = new ReadInboundFileClientHandler();
+        ClientReadInboundFileHandler
+                clientReadInboundFileHandler = new ClientReadInboundFileHandler();
         handlers = new ChannelHandler[] { new HttpClientCodec(),
                                           new HttpObjectAggregator(MAX_BODY_LENGTH),
-                                          readInboundFileClientHandler };
-        resultSupplier = readInboundFileClientHandler::getFileContent;
+                                          clientReadInboundFileHandler};
+        resultSupplier = clientReadInboundFileHandler::getFileContent;
     }
 
     @Override

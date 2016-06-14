@@ -21,7 +21,7 @@ import io.netty.util.internal.SystemPropertyUtil;
 import static com.mattchowning.file_read_write.server.ServerUtils.getDate;
 import static com.mattchowning.file_read_write.server.ServerUtils.sendError;
 
-public class FileReadWriteHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
+public class ServerFileReadWriteHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
     private static final String RELATIVE_FILE_PATH = "src/main/java/com/mattchowning/file_read_write/server/SecretServerFile.txt";
     private static final String FULL_FILE_PATH = SystemPropertyUtil.get("user.dir") + File.separator + RELATIVE_FILE_PATH;

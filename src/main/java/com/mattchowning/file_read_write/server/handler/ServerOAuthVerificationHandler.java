@@ -10,11 +10,11 @@ import io.netty.util.ReferenceCountUtil;
 import static com.mattchowning.file_read_write.server.ServerUtils.sendError;
 
 @ChannelHandler.Sharable
-public class OAuthVerificationHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
+public class ServerOAuthVerificationHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
     private OAuthTokenMap oAuthTokens;
 
-    public OAuthVerificationHandler(OAuthTokenMap oAuthTokenMap) {
+    public ServerOAuthVerificationHandler(OAuthTokenMap oAuthTokenMap) {
         super();
         this.oAuthTokens = oAuthTokenMap;
     }

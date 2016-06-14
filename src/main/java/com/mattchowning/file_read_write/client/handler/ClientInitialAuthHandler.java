@@ -10,7 +10,7 @@ import io.netty.handler.codec.http.FullHttpResponse;
 import static com.mattchowning.file_read_write.SharedConstants.GSON;
 import static com.mattchowning.file_read_write.SharedConstants.RESPONSE_CHARSET;
 
-public class InitialAuthClientHandler extends SimpleChannelInboundHandler<FullHttpResponse> {
+public class ClientInitialAuthHandler extends SimpleChannelInboundHandler<FullHttpResponse> {
 
     private OAuthToken oAuthToken;
 

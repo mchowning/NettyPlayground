@@ -17,11 +17,11 @@ import static com.mattchowning.file_read_write.SharedConstants.*;
 import static com.mattchowning.file_read_write.server.ServerUtils.getDate;
 import static com.mattchowning.file_read_write.server.ServerUtils.sendError;
 
-public class OAuthRequestHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
+public class ServerOAuthRequestHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
     private OAuthTokenMap oAuthTokens;
 
-    public OAuthRequestHandler(OAuthTokenMap oAuthTokenMap) {
+    public ServerOAuthRequestHandler(OAuthTokenMap oAuthTokenMap) {
         super();
         this.oAuthTokens = oAuthTokenMap;
     }

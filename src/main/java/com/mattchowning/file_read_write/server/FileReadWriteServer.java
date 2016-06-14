@@ -25,7 +25,7 @@ public class FileReadWriteServer {
             protected void initChannel(Channel ch) throws Exception {
                 ch.pipeline().addLast(new HttpServerCodec(),
                                       new HttpObjectAggregator(MAX_BODY_LENGTH),
-                                      new OAuthRequestHandler(tokenMap));
+                                      new ServerOAuthRequestHandler(tokenMap));
             }
         };
         startServer(OAUTH_HOST, OAUTH_PORT, oAuthChannelInitializer);
@@ -37,8 +37,8 @@ public class FileReadWriteServer {
             protected void initChannel(Channel ch) throws Exception {
                 ch.pipeline().addLast(new HttpServerCodec(),
                                       new HttpObjectAggregator(MAX_BODY_LENGTH),
-                                      new OAuthVerificationHandler(tokenMap),
-                                      new FileReadWriteHandler());
+                                      new ServerOAuthVerificationHandler(tokenMap),
+                                      new ServerFileReadWriteHandler());
             }
         };
         startServer(FILE_HOST, FILE_PORT, fileChannelInitializer);
