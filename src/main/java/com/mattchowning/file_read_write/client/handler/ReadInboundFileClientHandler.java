@@ -1,4 +1,4 @@
-package com.mattchowning.file_read_write.client;
+package com.mattchowning.file_read_write.client.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;

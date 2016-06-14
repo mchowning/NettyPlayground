@@ -1,6 +1,6 @@
 package com.mattchowning.file_read_write.server;
 
-import com.mattchowning.file_read_write.server.model.Error;
+import com.mattchowning.file_read_write.server.model.HttpError;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -44,7 +44,7 @@ public class ServerUtils {
                                  HttpResponseStatus status,
                                  String errorMsg,
                                  String errorDescription) {
-        Error error = new Error(errorMsg, errorDescription);
+        HttpError error = new HttpError(errorMsg, errorDescription);
         String json = GSON.toJson(error);
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
                                                                 status,

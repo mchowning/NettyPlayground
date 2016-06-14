@@ -2,7 +2,7 @@ package com.mattchowning.file_read_write.client;
 
 import java.util.Scanner;
 
-public class FileReadWriteCLI {
+public class FileReadWriteClientCLI {
 
     private static final String GET_SELECTION = "g";
     private static final String POST_SELECTION = "p";

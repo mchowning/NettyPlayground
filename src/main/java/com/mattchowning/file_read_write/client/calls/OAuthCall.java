@@ -1,6 +1,7 @@
 package com.mattchowning.file_read_write.client.calls;
 
-import com.mattchowning.file_read_write.client.InitialAuthHandler;
+import com.mattchowning.file_read_write.SharedConstants;
+import com.mattchowning.file_read_write.client.handler.InitialAuthHandler;
 import com.mattchowning.file_read_write.server.model.OAuthToken;
 
 import java.util.function.Supplier;
@@ -14,6 +15,7 @@ public abstract class OAuthCall extends Call<OAuthToken> {
     private final Supplier<OAuthToken> resultSupplier;
 
     public OAuthCall() {
+        super(SharedConstants.OAUTH_HOST, SharedConstants.OAUTH_PORT);
 
         InitialAuthHandler initialAuthHandler = new InitialAuthHandler();
         handlers = new ChannelHandler[] {new HttpClientCodec(),

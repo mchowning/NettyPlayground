@@ -1,4 +1,4 @@
-package com.mattchowning.file_read_write.client;
+package com.mattchowning.file_read_write.client.handler;
 
 import com.google.gson.JsonSyntaxException;
 import com.mattchowning.file_read_write.server.model.OAuthToken;

@@ -18,6 +18,10 @@ public class SharedConstants {
     public static final String USERNAME_KEY = "username";
     public static final String REFRESH_TOKEN_KEY = "refresh_token";
     public static final Charset RESPONSE_CHARSET = CharsetUtil.UTF_8;
+    public static final String FILE_HOST = "localhost";
+    public static final int FILE_PORT = 8081;
+    public static final String OAUTH_HOST = FILE_HOST;
+    public static final int OAUTH_PORT = 8080;
 
     public static final Gson GSON = new GsonBuilder()
             .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)

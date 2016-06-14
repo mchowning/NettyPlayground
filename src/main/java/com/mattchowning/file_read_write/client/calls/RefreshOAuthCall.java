@@ -6,11 +6,11 @@ import io.netty.handler.codec.http.multipart.HttpPostRequestEncoder;
 
 import static com.mattchowning.file_read_write.SharedConstants.*;
 
-public class RefreshOAuthTokenCall extends OAuthCall {
+public class RefreshOAuthCall extends OAuthCall {
 
     private final String refreshToken;
 
-    public RefreshOAuthTokenCall(String refreshToken) {
+    public RefreshOAuthCall(String refreshToken) {
         this.refreshToken = refreshToken;
     }
 

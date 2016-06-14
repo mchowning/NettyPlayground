@@ -1,66 +1,39 @@
-package com.mattchowning.file_read_write.server;
+package com.mattchowning.file_read_write.server.handler;
 
 import com.mattchowning.file_read_write.server.model.OAuthToken;
+import com.mattchowning.file_read_write.server.model.OAuthTokenMap;
 
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import io.netty.buffer.Unpooled;
-import io.netty.channel.*;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.multipart.*;
-import io.netty.util.ReferenceCountUtil;
 
 import static com.mattchowning.file_read_write.SharedConstants.*;
 import static com.mattchowning.file_read_write.server.ServerUtils.getDate;
 import static com.mattchowning.file_read_write.server.ServerUtils.sendError;
 
-@ChannelHandler.Sharable
-public class OAuthServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
+public class OAuthRequestHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
-    private Map<String, OAuthToken> issuedTokens = new HashMap<>();
-    private Map<String, OAuthToken> issuedRefreshTokens = new HashMap<>();
+    private OAuthTokenMap oAuthTokens;
+
+    public OAuthRequestHandler(OAuthTokenMap oAuthTokenMap) {
+        super();
+        this.oAuthTokens = oAuthTokenMap;
+    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         String path = new QueryStringDecoder(request.uri()).path();
-        switch(path) {
-            case OAUTH_PATH:
-                processOAuthRequest(ctx, request);
-                break;
-            default:
-                if (hasValidToken(ctx, request)) {
-                    forwardRequest(ctx, request);
-                }
-        }
-    }
-
-    private boolean hasValidToken(ChannelHandlerContext ctx, FullHttpRequest request) {
-        boolean isAuthorized = false;
-        if (request.headers().contains(HttpHeaderNames.AUTHORIZATION)) {
-            String encodedAuthHeader = request.headers().get(HttpHeaderNames.AUTHORIZATION);
-            OAuthToken receivedOAuthToken = OAuthToken.fromEncodedAuthorizationHeader(encodedAuthHeader);
-            if (!receivedOAuthToken.hasValidTokenType()) {
-                sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_grant", "Bearer token type required");
-            } else if (!issuedTokens.containsKey(receivedOAuthToken.accessToken)) {
-                sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_grant", "Invalid token");
-            } else if (issuedTokens.get(receivedOAuthToken.accessToken).isExpired()) { // use saved token to check expiration
-                sendError(ctx, HttpResponseStatus.BAD_REQUEST, "Token expired");
-            } else {
-                isAuthorized = true;
-            }
+        if (OAUTH_PATH.equals(path)) {
+            processOAuthRequest(ctx, request);
         } else {
-            sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "authorization header required");
+            invalidEndpoint(ctx);
         }
-        return isAuthorized;
-    }
-
-    private void forwardRequest(ChannelHandlerContext ctx, FullHttpRequest request) {
-        ReferenceCountUtil.retain(request);
-        ctx.fireChannelRead(request);
     }
 
     private void processOAuthRequest(ChannelHandlerContext ctx, FullHttpRequest request)
@@ -86,6 +59,17 @@ public class OAuthServerHandler extends SimpleChannelInboundHandler<FullHttpRequ
         }
     }
 
+    @NotNull
+    private String getValue(HttpPostRequestDecoder decoder, String key) throws IOException {
+        String result = null;
+        InterfaceHttpData bodyHttpDataForKey = decoder.getBodyHttpData(key);
+        if (bodyHttpDataForKey != null && bodyHttpDataForKey instanceof Attribute) {
+            result = ((Attribute) bodyHttpDataForKey).getValue();
+        }
+        if (result == null) result = "";
+        return result;
+    }
+
     private void processPasswordRequest(ChannelHandlerContext ctx,
                                         HttpPostRequestDecoder decoder) throws IOException {
 
@@ -104,39 +88,21 @@ public class OAuthServerHandler extends SimpleChannelInboundHandler<FullHttpRequ
         }
     }
 
-    @NotNull
-    private String getValue(HttpPostRequestDecoder decoder, String key) throws IOException {
-        String result = null;
-        InterfaceHttpData bodyHttpDataForKey = decoder.getBodyHttpData(key);
-        if (bodyHttpDataForKey != null && bodyHttpDataForKey instanceof Attribute) {
-            result = ((Attribute) bodyHttpDataForKey).getValue();
-        }
-        if (result == null) result = "";
-        return result;
-    }
-
     private void processRefreshRequest(ChannelHandlerContext ctx,
                                        HttpPostRequestDecoder decoder) throws IOException {
         String refreshToken = getValue(decoder, REFRESH_TOKEN_KEY);
-        if (!issuedRefreshTokens.containsKey(refreshToken)) {
+        if (!oAuthTokens.containsRefreshToken(refreshToken)) {
             sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "valid refresh_token not provided");
         } else {
-            invalidateAssociatedOAuthToken(refreshToken);
+            oAuthTokens.removeToken(refreshToken);
             respondWithNewOAuthToken(ctx);
         }
     }
 
     private void respondWithNewOAuthToken(ChannelHandlerContext ctx) {
         OAuthToken newToken = OAuthToken.generateNew();
-        issuedTokens.put(newToken.accessToken, newToken);
-        issuedRefreshTokens.put(newToken.refreshToken, newToken);
+        oAuthTokens.addToken(newToken);
         respondWithOAuthToken(ctx, newToken);
-    }
-
-    private void invalidateAssociatedOAuthToken(String refreshToken) {
-        OAuthToken oldToken = issuedRefreshTokens.get(refreshToken);
-        issuedTokens.remove(oldToken.accessToken);
-        issuedRefreshTokens.remove(oldToken.refreshToken);
     }
 
     private void respondWithOAuthToken(ChannelHandlerContext ctx, OAuthToken token) {
@@ -155,9 +121,9 @@ public class OAuthServerHandler extends SimpleChannelInboundHandler<FullHttpRequ
         return "sleepynate".equals(username);
     }
 
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        cause.printStackTrace();
-        ctx.close();
+    private static void invalidEndpoint(ChannelHandlerContext ctx) {
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
+                                                                HttpResponseStatus.NOT_FOUND);
+        ctx.writeAndFlush(response);
     }
 }

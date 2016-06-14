@@ -18,12 +18,18 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 public abstract class Call<T> {
 
     protected static final int MAX_BODY_LENGTH = 15000;
-    private static final String HOST = "localhost";
-    private static final int PORT = 8080;
+
+    private final String host;
+    private final int port;
 
     protected abstract ChannelHandler[] getChannelHandlers();
     protected abstract Supplier<T> getResultSupplier();
     protected abstract void makeRequest(ChannelOutboundInvoker ctx);
+
+    public Call(String host, int port) {
+        this.host = host;
+        this.port = port;
+    }
 
     public void execute(Consumer<T> resultConsumer) {
         ChannelFutureListener completionListener = ignored ->
@@ -36,7 +42,7 @@ public abstract class Call<T> {
         EventLoopGroup workerGroup = new NioEventLoopGroup();
 
         try {
-            ChannelFuture f = bootstrap(workerGroup).connect(HOST, PORT)
+            ChannelFuture f = bootstrap(workerGroup).connect(host, port)
                                                     .sync();
             f.channel().closeFuture().addListener(completionListener);
             makeRequest(f.channel());
