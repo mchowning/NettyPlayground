@@ -12,7 +12,7 @@ import io.netty.util.CharsetUtil;
 
 public class OAuthToken {
 
-    public static final long TOKEN_DURATION_IN_SECONDS = 10;
+    public static final long TOKEN_DURATION_IN_SECONDS = 7;  // small value for testing purposes
 
     private static final String PROPER_TOKEN_TYPE = "Bearer";
 

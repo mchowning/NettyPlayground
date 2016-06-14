@@ -91,17 +91,17 @@ public class OAuthRequestHandler extends SimpleChannelInboundHandler<FullHttpReq
     private void processRefreshRequest(ChannelHandlerContext ctx,
                                        HttpPostRequestDecoder decoder) throws IOException {
         String refreshToken = getValue(decoder, REFRESH_TOKEN_KEY);
-        if (!oAuthTokens.containsRefreshToken(refreshToken)) {
-            sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "valid refresh_token not provided");
-        } else {
-            oAuthTokens.removeToken(refreshToken);
+        if (oAuthTokens.containsRefreshToken(refreshToken)) {
+            oAuthTokens.removeToken(oAuthTokens.getWithRefreshToken(refreshToken));
             respondWithNewOAuthToken(ctx);
+        } else {
+            sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "valid refresh_token not provided");
         }
     }
 
     private void respondWithNewOAuthToken(ChannelHandlerContext ctx) {
         OAuthToken newToken = OAuthToken.generateNew();
-        oAuthTokens.addToken(newToken);
+        oAuthTokens.add(newToken);
         respondWithOAuthToken(ctx, newToken);
     }
 
