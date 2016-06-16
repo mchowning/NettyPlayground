@@ -45,7 +45,7 @@ public class ClientInitialAuthHandler extends SimpleChannelInboundHandler<FullHt
         ctx.close();
     }
 
-    public OAuthToken getOAuthModel() {
+    public OAuthToken getOAuthToken() {
         return oAuthToken;
     }
 }

@@ -1,5 +1,6 @@
 package com.mattchowning.file_read_write.server.handler;
 
+import com.mattchowning.file_read_write.server.ServerUtils;
 import com.mattchowning.file_read_write.server.model.OAuthToken;
 import com.mattchowning.file_read_write.server.model.OAuthTokenMap;
 
@@ -7,16 +8,20 @@ import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import io.netty.util.ReferenceCountUtil;
 
-import static com.mattchowning.file_read_write.server.ServerUtils.sendError;
-
 @ChannelHandler.Sharable
 public class ServerOAuthVerificationHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
-    private OAuthTokenMap oAuthTokens;
+    private final OAuthTokenMap oAuthTokens;
+    private final ServerUtils serverUtils;
 
     public ServerOAuthVerificationHandler(OAuthTokenMap oAuthTokenMap) {
+        this(oAuthTokenMap, new ServerUtils());
+    }
+
+    protected ServerOAuthVerificationHandler(OAuthTokenMap oAuthTokenMap, ServerUtils serverUtils) {
         super();
         this.oAuthTokens = oAuthTokenMap;
+        this.serverUtils = serverUtils;
     }
 
     @Override
@@ -32,16 +37,16 @@ public class ServerOAuthVerificationHandler extends SimpleChannelInboundHandler<
             String encodedAuthHeader = request.headers().get(HttpHeaderNames.AUTHORIZATION);
             OAuthToken receivedOAuthToken = OAuthToken.fromEncodedAuthorizationHeader(encodedAuthHeader);
             if (!receivedOAuthToken.hasValidTokenType()) {
-                sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_grant", "Bearer token type required");
+                serverUtils.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_grant", "Bearer token type required");
             } else if (!oAuthTokens.containsAccessToken(receivedOAuthToken.accessToken)) {
-                sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_grant", "Invalid token");
+                serverUtils.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_grant", "Invalid token");
             } else if (oAuthTokens.getWithAccessToken(receivedOAuthToken.accessToken).isExpired()) { // use saved token to check expiration
-                sendError(ctx, HttpResponseStatus.BAD_REQUEST, "Token expired");
+                serverUtils.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "Token expired");
             } else {
                 isAuthorized = true;
             }
         } else {
-            sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "authorization header required");
+            serverUtils.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "authorization header required");
         }
         return isAuthorized;
     }

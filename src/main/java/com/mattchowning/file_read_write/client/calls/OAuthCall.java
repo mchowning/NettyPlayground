@@ -21,7 +21,7 @@ public abstract class OAuthCall extends Call<OAuthToken> {
         handlers = new ChannelHandler[] {new HttpClientCodec(),
                                          new HttpObjectAggregator(MAX_BODY_LENGTH),
                                          initialAuthHandler };
-        resultSupplier = initialAuthHandler::getOAuthModel;
+        resultSupplier = initialAuthHandler::getOAuthToken;
     }
 
     @Override
