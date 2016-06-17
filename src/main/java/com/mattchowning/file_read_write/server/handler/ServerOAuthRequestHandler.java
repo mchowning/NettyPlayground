@@ -1,6 +1,6 @@
 package com.mattchowning.file_read_write.server.handler;
 
-import com.mattchowning.file_read_write.server.ServerUtils;
+import com.mattchowning.file_read_write.server.ServerUtil;
 import com.mattchowning.file_read_write.server.model.OAuthToken;
 import com.mattchowning.file_read_write.server.model.OAuthTokenMap;
 
@@ -19,22 +19,21 @@ import static com.mattchowning.file_read_write.SharedConstants.*;
 public class ServerOAuthRequestHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
     private final OAuthTokenMap oAuthTokens;
-    private final ServerUtils serverUtils;
+    private final ServerUtil serverUtil;
 
     public ServerOAuthRequestHandler(OAuthTokenMap oAuthTokenMap) {
-        this(oAuthTokenMap, new ServerUtils());
+        this(oAuthTokenMap, new ServerUtil());
     }
 
-    public ServerOAuthRequestHandler(OAuthTokenMap oAuthTokenMap, ServerUtils serverUtils) {
+    public ServerOAuthRequestHandler(OAuthTokenMap oAuthTokenMap, ServerUtil serverUtil) {
         super();
         this.oAuthTokens = oAuthTokenMap;
-        this.serverUtils = serverUtils;
+        this.serverUtil = serverUtil;
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
-        String path = new QueryStringDecoder(request.uri()).path();
-        if (OAUTH_PATH.equals(path)) {
+        if (OAUTH_PATH.equals(request.uri())) {
             processOAuthRequest(ctx, request);
         } else {
             invalidEndpoint(ctx);
@@ -44,7 +43,7 @@ public class ServerOAuthRequestHandler extends SimpleChannelInboundHandler<FullH
     private void processOAuthRequest(ChannelHandlerContext ctx, FullHttpRequest request)
             throws IOException {
         if (request.method() != HttpMethod.POST) {
-            serverUtils.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "oauth request must be POST");
+            serverUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "oauth request must be POST");
         } else {
             HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(request);
             String grantType = getValue(decoder, GRANT_TYPE_KEY);
@@ -59,7 +58,7 @@ public class ServerOAuthRequestHandler extends SimpleChannelInboundHandler<FullH
                     String errorDescription = String.format("oauth request must specify grant_type of %s or %s",
                                                             GRANT_TYPE_PASSWORD,
                                                             GRANT_TYPE_REFRESH_TOKEN);
-                    serverUtils.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", errorDescription);
+                    serverUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", errorDescription);
             }
         }
     }
@@ -82,12 +81,12 @@ public class ServerOAuthRequestHandler extends SimpleChannelInboundHandler<FullH
         String password = getValue(decoder, PASSWORD_KEY);
         if (username.isEmpty()) {
             String errorDescription = "oauth request must specify username";
-            serverUtils.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", errorDescription);
+            serverUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", errorDescription);
         } else if (password.isEmpty()) {
             String errorDescription = "oauth request must specify password";
-            serverUtils.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", errorDescription);
+            serverUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", errorDescription);
         } else if (isUserShady(username, password)) {
-            serverUtils.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_client", "user is shady");
+            serverUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_client", "user is shady");
         } else {
             respondWithNewOAuthToken(ctx);
         }
@@ -100,12 +99,12 @@ public class ServerOAuthRequestHandler extends SimpleChannelInboundHandler<FullH
             oAuthTokens.removeToken(oAuthTokens.getWithRefreshToken(refreshToken));
             respondWithNewOAuthToken(ctx);
         } else {
-            serverUtils.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "valid refresh_token not provided");
+            serverUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "valid refresh_token not provided");
         }
     }
 
     private void respondWithNewOAuthToken(ChannelHandlerContext ctx) {
-        OAuthToken newToken = OAuthToken.generateNew();
+        OAuthToken newToken = new OAuthToken();
         oAuthTokens.add(newToken);
         respondWithOAuthToken(ctx, newToken);
     }
@@ -117,7 +116,7 @@ public class ServerOAuthRequestHandler extends SimpleChannelInboundHandler<FullH
                                                                 HttpResponseStatus.OK,
                                                                 Unpooled.copiedBuffer(body, RESPONSE_CHARSET));
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json; charset=UTF-8");
-        response.headers().set(HttpHeaderNames.DATE, serverUtils.getDate());
+        response.headers().set(HttpHeaderNames.DATE, serverUtil.getDate());
         response.headers().set(HttpHeaderNames.CONTENT_LENGTH, body.length());
 
         ctx.writeAndFlush(response);

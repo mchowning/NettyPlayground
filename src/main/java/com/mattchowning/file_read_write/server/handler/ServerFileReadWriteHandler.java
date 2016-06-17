@@ -1,6 +1,6 @@
 package com.mattchowning.file_read_write.server.handler;
 
-import com.mattchowning.file_read_write.server.ServerUtils;
+import com.mattchowning.file_read_write.server.ServerUtil;
 
 import java.io.File;
 
@@ -13,16 +13,16 @@ import io.netty.handler.codec.http.*;
 public class ServerFileReadWriteHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
     private final FileManager fileManager;
-    private final ServerUtils serverUtils;
+    private final ServerUtil serverUtil;
 
     public ServerFileReadWriteHandler(String fullFilePath) {
-        this(new FileManager(fullFilePath), new ServerUtils());
+        this(new FileManager(fullFilePath), new ServerUtil());
     }
 
-    protected ServerFileReadWriteHandler(FileManager fileManager, ServerUtils serverUtils) {
+    protected ServerFileReadWriteHandler(FileManager fileManager, ServerUtil serverUtil) {
         super();
         this.fileManager = fileManager;
-        this.serverUtils = serverUtils;
+        this.serverUtil = serverUtil;
     }
 
     @Override
@@ -35,7 +35,7 @@ public class ServerFileReadWriteHandler extends SimpleChannelInboundHandler<Full
                 writeFileContent(ctx, request.content());
                 break;
             default:
-                serverUtils.sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED);
+                serverUtil.sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED);
         }
     }
 
@@ -51,7 +51,7 @@ public class ServerFileReadWriteHandler extends SimpleChannelInboundHandler<Full
         HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
         response.headers().set(HttpHeaderNames.CONTENT_LENGTH, file.length());
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, getContentType(file));
-        response.headers().set(HttpHeaderNames.DATE, serverUtils.getDate());
+        response.headers().set(HttpHeaderNames.DATE, serverUtil.getDate());
         return response;
     }
 
@@ -60,7 +60,7 @@ public class ServerFileReadWriteHandler extends SimpleChannelInboundHandler<Full
         if (succeeded) {
             returnFileContent(ctx);
         } else {
-            serverUtils.sendError(ctx, HttpResponseStatus.NO_CONTENT);
+            serverUtil.sendError(ctx, HttpResponseStatus.NO_CONTENT);
         }
     }
 

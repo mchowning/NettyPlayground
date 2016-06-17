@@ -30,7 +30,7 @@ public class FileReadWriteClient {
     }
 
     public void refreshOAuthToken(@NotNull Consumer<OAuthToken> externalConsumer) {
-        Call<OAuthToken> call = new RefreshOAuthCall(oAuthToken.refreshToken);
+        Call<OAuthToken> call = new RefreshOAuthCall(oAuthToken.getRefreshToken());
         call.execute(setOAuthToken.andThen(externalConsumer));
     }
 }

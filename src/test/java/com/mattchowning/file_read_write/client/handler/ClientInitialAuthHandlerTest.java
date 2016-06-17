@@ -35,7 +35,7 @@ public class ClientInitialAuthHandlerTest {
 
     @Test
     public void parses_oAuth_token() throws Exception {
-        OAuthToken expected = OAuthToken.generateNew();
+        OAuthToken expected = new OAuthToken();
         setResponseBody(expected);
 
         subject.channelRead0(ctx, response);

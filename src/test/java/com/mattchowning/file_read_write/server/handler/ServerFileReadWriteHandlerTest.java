@@ -1,6 +1,6 @@
 package com.mattchowning.file_read_write.server.handler;
 
-import com.mattchowning.file_read_write.server.ServerUtils;
+import com.mattchowning.file_read_write.server.ServerUtil;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -29,7 +29,7 @@ public class ServerFileReadWriteHandlerTest {
     private File file;
     @Mock private ByteBuf fileContent;
     @Mock private FileManager fileManager;
-    @Mock private ServerUtils serverUtils;
+    @Mock private ServerUtil serverUtil;
     @Mock private ChannelHandlerContext ctx;
     @Mock private FullHttpRequest request;
     @InjectMocks private ServerFileReadWriteHandler subject;
@@ -39,7 +39,7 @@ public class ServerFileReadWriteHandlerTest {
     public void before() {
         file = new File(SystemPropertyUtil.get("user.dir") + File.separator + "src/test/java/com/mattchowning/file_read_write/server/handler/testfile");
         when(fileManager.getFile()).thenReturn(file);
-        when(serverUtils.getDate()).thenReturn(EXPECTED_DATE_STRING);
+        when(serverUtil.getDate()).thenReturn(EXPECTED_DATE_STRING);
         when(request.content()).thenReturn(fileContent);
     }
 
@@ -69,7 +69,7 @@ public class ServerFileReadWriteHandlerTest {
         subject.channelRead0(ctx, request);
 
         verify(fileManager).writeFileContent(fileContent);
-        verify(serverUtils).sendError(ctx, HttpResponseStatus.NO_CONTENT);
+        verify(serverUtil).sendError(ctx, HttpResponseStatus.NO_CONTENT);
         verifyZeroInteractions(ctx);
     }
 

@@ -9,7 +9,9 @@ public class OAuthTokenMap {
     private Set<OAuthToken> issuedTokens = new HashSet<>();
 
     public boolean add(OAuthToken oAuthToken) {
-        if (contains(oAuthToken)) {
+        boolean alreadyContainsToken = issuedTokens.stream()
+                                                   .anyMatch(issuedToken -> oAuthToken == issuedToken);
+        if (alreadyContainsToken) {
             System.err.println("Error: token already added to TokenMap");
             return false;
         } else {
@@ -18,27 +20,22 @@ public class OAuthTokenMap {
         }
     }
 
-    public boolean contains(OAuthToken token) {
+    public boolean containsAccessToken(OAuthToken oAuthToken) {
         return issuedTokens.stream()
-                           .anyMatch(issuedToken -> token == issuedToken);
-    }
-
-    public boolean containsAccessToken(String accessToken) {
-        return issuedTokens.stream()
-                           .anyMatch(issuedToken -> issuedToken.accessToken.equals(accessToken));
+                           .anyMatch(issuedToken -> issuedToken.getAccessToken().equals(oAuthToken.getAccessToken()));
     }
 
     public boolean containsRefreshToken(String refreshToken) {
         return issuedTokens.stream()
-                           .anyMatch(issuedToken -> issuedToken.refreshToken.equals(refreshToken));
+                           .anyMatch(issuedToken -> issuedToken.getRefreshToken().equals(refreshToken));
     }
 
     public OAuthToken getWithAccessToken(String accessToken) {
-        return getFirstMatch(issuedToken -> issuedToken.accessToken.equals(accessToken));
+        return getFirstMatch(issuedToken -> issuedToken.getAccessToken().equals(accessToken));
     }
 
     public OAuthToken getWithRefreshToken(String refreshToken) {
-        return getFirstMatch(issuedToken -> issuedToken.refreshToken.equals(refreshToken));
+        return getFirstMatch(issuedToken -> issuedToken.getRefreshToken().equals(refreshToken));
     }
 
     private OAuthToken getFirstMatch(Predicate<OAuthToken> predicate) {
