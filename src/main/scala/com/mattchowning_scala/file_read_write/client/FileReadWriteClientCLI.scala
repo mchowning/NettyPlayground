@@ -24,20 +24,31 @@ object FileReadWriteClientCLI {
       } else {
         retrieveUserSelection(client)
       }
-    }, username, password)
+    }, () => {
+      System.out.println("Auth request failed")
+      requestAuth(client)
+    },
+      username,
+      password)
   }
 
   private def retrieveUserSelection(client: FileReadWriteClient) {
     askForUserSelection match {
       case GET_SELECTION =>
         client.retrieveFileContent(contents => {
-          System.out.println("file contents: " + contents)
+          System.out.println("File contents: " + contents)
+          retrieveUserSelection(client)
+        }, () => {
+          System.out.println("File retrieval failed.")
           retrieveUserSelection(client)
         })
       case POST_SELECTION =>
         val newFileContent: String = askForUserRequestedFileContent
         client.updateFileContent(newFileContent, updatedContent => {
           System.out.println("file contents: " + updatedContent)
+          retrieveUserSelection(client)
+        }, () => {
+          System.out.println("File update failed.")
           retrieveUserSelection(client)
         })
       case EXIT_SELECTION =>

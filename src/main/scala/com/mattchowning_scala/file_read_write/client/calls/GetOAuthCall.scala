@@ -1,11 +1,16 @@
 package com.mattchowning_scala.file_read_write.client.calls
 
+import com.mattchowning.file_read_write.server.model.OAuthToken
 import io.netty.channel.ChannelOutboundInvoker
 import io.netty.handler.codec.http._
 import io.netty.handler.codec.http.multipart.HttpPostRequestEncoder
 import com.mattchowning.file_read_write.SharedConstants._
 
-class GetOAuthCall(username: String, password: String) extends OAuthCall {
+class GetOAuthCall(username: String,
+                   password: String,
+                   successCallback: OAuthToken => Unit,
+                   failureCallback: () => Unit)
+  extends OAuthCall(successCallback, failureCallback) {
 
   protected def makeRequest(ctx: ChannelOutboundInvoker) {
     System.out.println("Requesting OAuth token...")

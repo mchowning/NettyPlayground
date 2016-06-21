@@ -8,8 +8,9 @@ import io.netty.handler.codec.http.FullHttpResponse
 import com.mattchowning.file_read_write.SharedConstants.GSON
 import com.mattchowning.file_read_write.SharedConstants.RESPONSE_CHARSET
 
-class ClientInitialAuthHandler extends SimpleChannelInboundHandler[FullHttpResponse] {
-  private var oAuthToken: OAuthToken = null
+class ClientInitialAuthHandler(successHandler: OAuthToken => Unit,
+                               failureHandler: () => Unit)
+  extends SimpleChannelInboundHandler[FullHttpResponse] {
 
   @throws(classOf[Exception])
   protected def channelRead0(ctx: ChannelHandlerContext, response: FullHttpResponse) {
@@ -18,11 +19,12 @@ class ClientInitialAuthHandler extends SimpleChannelInboundHandler[FullHttpRespo
       case 200 =>
         val oAuthToken: OAuthToken = parseOAuthResponse(responseBody)
         if (oAuthToken != null) {
-          this.oAuthToken = oAuthToken
           System.out.println("OAuth response received.")
+          successHandler(oAuthToken)
         }
       case _ =>
         System.out.println("OAuth ERROR: " + responseBody)
+        failureHandler()
     }
     ctx.close
   }

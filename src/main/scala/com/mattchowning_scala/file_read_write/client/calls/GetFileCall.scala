@@ -7,13 +7,15 @@ import java.util.function.Consumer
 import io.netty.channel.ChannelOutboundInvoker
 import io.netty.handler.codec.http._
 
-class GetFileCall(@NotNull _oAuthToken: OAuthToken,
-                  @NotNull _client: FileReadWriteClient)
-  extends FileCall(_oAuthToken, _client) {
+class GetFileCall(_oAuthToken: OAuthToken,
+                  _client: FileReadWriteClient,
+                  successCallback: String => Unit,
+                  failureCallback: () => Unit)
+  extends FileCall(_oAuthToken, _client, successCallback, failureCallback) {
 
-  override def execute(@NotNull resultConsumer: String => Unit) {
+  override def execute() {
     System.out.println("Requesting file content...")
-    super.execute(resultConsumer)
+    super.execute()
   }
 
   override protected def makeAuthenticatedRequest(ctx: ChannelOutboundInvoker) {

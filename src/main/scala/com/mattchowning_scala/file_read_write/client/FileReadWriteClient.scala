@@ -18,26 +18,33 @@ class FileReadWriteClient {
     token
   }
 
-  def retrieveFileContent(@NotNull consumer: String => Unit) {
-    val call: Call[String] = new GetFileCall(oAuthToken, this)
-    call.execute(consumer)
+  def retrieveFileContent(successCallback: String => Unit, failureCallback: () => Unit) {
+    val call: Call[String] = new GetFileCall(oAuthToken, this, successCallback, failureCallback)
+    call.execute()
   }
 
-  def updateFileContent(@NotNull newFileContent: String,
-                        @NotNull consumer: String => Unit) {
-    val call: Call[String] = new PostFileCall(oAuthToken, this, newFileContent)
-    call.execute(consumer)
+  def updateFileContent(newFileContent: String,
+                        successCallback: String => Unit,
+                        failureCallback: () => Unit) {
+    val call: Call[String] = new PostFileCall(oAuthToken, this, successCallback, failureCallback, newFileContent)
+    call.execute()
   }
 
-  def retrieveOAuthToken(@NotNull externalConsumer: OAuthToken => Unit,
+  def retrieveOAuthToken(successCallback: OAuthToken => Unit,
+                         failureCallback: () => Unit,
                          username: String,
                          password: String) {
-    val call: Call[OAuthToken] = new GetOAuthCall(username, password)
-    call.execute(setOAuthToken.andThen(externalConsumer))
+    val call: Call[OAuthToken] = new GetOAuthCall(username,
+                                                  password,
+                                                  setOAuthToken.andThen(successCallback),
+                                                  failureCallback)
+    call.execute()
   }
 
-  def refreshOAuthToken(@NotNull externalConsumer: OAuthToken => Unit) {
-    val call: Call[OAuthToken] = new RefreshOAuthCall(oAuthToken.getRefreshToken)
-    call.execute(setOAuthToken.andThen(externalConsumer))
+  def refreshOAuthToken(successCallback: OAuthToken => Unit, failureCallback: () => Unit) {
+    val call: Call[OAuthToken] = new RefreshOAuthCall(oAuthToken.getRefreshToken,
+                                                      setOAuthToken.andThen(successCallback),
+                                                      failureCallback)
+    call.execute()
   }
 }

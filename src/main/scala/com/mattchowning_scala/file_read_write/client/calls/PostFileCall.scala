@@ -9,19 +9,28 @@ import io.netty.channel.ChannelOutboundInvoker
 import io.netty.handler.codec.http._
 import io.netty.util.CharsetUtil
 
-class PostFileCall(@NotNull _oAuthToken: OAuthToken,
-                   @NotNull _client: FileReadWriteClient,
-                   @NotNull newFileContent: String)
-  extends FileCall(_oAuthToken, _client) {
+class PostFileCall(_oAuthToken: OAuthToken,
+                   _client: FileReadWriteClient,
+                   successCallback: String => Unit,
+                   failureCallback: () => Unit,
+                   newFileContent: String)
+  extends FileCall(_oAuthToken, _client, successCallback, failureCallback) {
 
-  override def execute(@NotNull resultConsumer: String => Unit) {
+  override def execute() {
     System.out.println("Requesting to post file content...")
-    super.execute(resultConsumer)
+    super.execute()
   }
 
   override protected def makeAuthenticatedRequest(ctx: ChannelOutboundInvoker) {
-    val message: FullHttpMessage = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST, "", Unpooled.copiedBuffer(newFileContent, CharsetUtil.UTF_8))
-    message.headers.add(HttpHeaderNames.CONTENT_LENGTH, newFileContent.length).add(HttpHeaderNames.AUTHORIZATION, oAuthToken.getEncodedAuthorizationHeader)
+    val message: FullHttpMessage = new DefaultFullHttpRequest(
+      HttpVersion.HTTP_1_1,
+      HttpMethod.POST,
+      "",
+      Unpooled.copiedBuffer(newFileContent, CharsetUtil.UTF_8))
+    message.headers.add(
+      HttpHeaderNames.CONTENT_LENGTH,
+      newFileContent.length).add(HttpHeaderNames.AUTHORIZATION,
+      oAuthToken.getEncodedAuthorizationHeader)
     System.out.println("Posting updated file content...")
     ctx.writeAndFlush(message)
   }

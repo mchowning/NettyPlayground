@@ -5,18 +5,17 @@ import io.netty.channel.SimpleChannelInboundHandler
 import io.netty.handler.codec.http.FullHttpResponse
 import io.netty.util.CharsetUtil
 
-class ClientReadInboundFileHandler extends SimpleChannelInboundHandler[FullHttpResponse] {
-
-  private var fileContent: String = null
+class ClientReadInboundFileHandler(successHandler: String => Unit, failureHandler: () => Unit) extends SimpleChannelInboundHandler[FullHttpResponse] {
 
   @throws(classOf[Exception])
   protected def channelRead0(ctx: ChannelHandlerContext, response: FullHttpResponse) {
     val responseContent: String = getContent(response)
     if (response.status.code == 200) {
-      fileContent = responseContent
+      successHandler(responseContent)
     }
     else {
       System.out.println("Error retrieving file: " + responseContent)
+      failureHandler()
     }
     ctx.close
   }
