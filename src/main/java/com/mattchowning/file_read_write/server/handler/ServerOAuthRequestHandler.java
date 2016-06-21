@@ -86,7 +86,7 @@ public class ServerOAuthRequestHandler extends SimpleChannelInboundHandler<FullH
             String errorDescription = "oauth request must specify password";
             serverUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", errorDescription);
         } else if (isUserShady(username, password)) {
-            serverUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_client", "user is shady");
+            serverUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "user is shady");
         } else {
             respondWithNewOAuthToken(ctx);
         }
