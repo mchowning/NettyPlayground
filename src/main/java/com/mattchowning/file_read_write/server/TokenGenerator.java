@@ -10,7 +10,7 @@ public class TokenGenerator {
 
     public static String generateNew(){
         StringBuilder sb = new StringBuilder(TOKEN_LENGTH);
-        for( int i = 0; i < TOKEN_LENGTH; i++ ) {
+        for (int i = 0; i < TOKEN_LENGTH; i++) {
             char newChar = AB.charAt(RND.nextInt(AB.length()));
             sb.append(newChar);
         }

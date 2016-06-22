@@ -1,10 +1,10 @@
 package com.mattchowning_scala.file_read_write.client.calls
 
-import com.mattchowning.file_read_write.server.model.OAuthToken
+import com.mattchowning_scala.file_read_write.server.model.OAuthToken
+import com.mattchowning_scala.file_read_write.SharedConstants._
 import io.netty.channel.ChannelOutboundInvoker
 import io.netty.handler.codec.http._
 import io.netty.handler.codec.http.multipart.HttpPostRequestEncoder
-import com.mattchowning.file_read_write.SharedConstants._
 
 class GetOAuthCall(username: String,
                    password: String,

@@ -1,19 +1,13 @@
 package com.mattchowning_scala.file_read_write.client
 
-import com.mattchowning.file_read_write.server.model.OAuthToken
+import com.mattchowning_scala.file_read_write.server.model.OAuthToken
 import com.mattchowning_scala.file_read_write.client.calls._
-import org.jetbrains.annotations.NotNull
 
 class FileReadWriteClient {
 
   private var oAuthToken: OAuthToken = null
 
   private val setOAuthToken: (OAuthToken => OAuthToken) = (token: OAuthToken) => {
-    this.oAuthToken = token
-    token
-  }
-
-  def setOAuthToken(token: OAuthToken): OAuthToken = {
     this.oAuthToken = token
     token
   }
@@ -42,7 +36,7 @@ class FileReadWriteClient {
   }
 
   def refreshOAuthToken(successCallback: OAuthToken => Unit, failureCallback: () => Unit) {
-    val call: Call[OAuthToken] = new RefreshOAuthCall(oAuthToken.getRefreshToken,
+    val call: Call[OAuthToken] = new RefreshOAuthCall(oAuthToken.refreshToken,
                                                       setOAuthToken.andThen(successCallback),
                                                       failureCallback)
     call.execute()

@@ -30,6 +30,7 @@ public class OAuthTokenMap {
                            .anyMatch(issuedToken -> issuedToken.getRefreshToken().equals(refreshToken));
     }
 
+    // TODO return some kind of option value with these and drop the matching contains method
     public OAuthToken getWithAccessToken(String accessToken) {
         return getFirstMatch(issuedToken -> issuedToken.getAccessToken().equals(accessToken));
     }

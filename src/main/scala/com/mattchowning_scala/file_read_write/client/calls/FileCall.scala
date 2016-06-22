@@ -1,8 +1,8 @@
 package com.mattchowning_scala.file_read_write.client.calls
 
-import com.mattchowning.file_read_write.SharedConstants
+import com.mattchowning_scala.file_read_write.SharedConstants
 import com.mattchowning_scala.file_read_write.client.handler.ClientReadInboundFileHandler
-import com.mattchowning.file_read_write.server.model.OAuthToken
+import com.mattchowning_scala.file_read_write.server.model.OAuthToken
 import com.mattchowning_scala.file_read_write.client.FileReadWriteClient
 import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelOutboundInvoker

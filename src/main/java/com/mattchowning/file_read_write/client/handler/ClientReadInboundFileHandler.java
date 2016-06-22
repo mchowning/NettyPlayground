@@ -7,6 +7,7 @@ import io.netty.util.CharsetUtil;
 
 public class ClientReadInboundFileHandler extends SimpleChannelInboundHandler<FullHttpResponse> {
 
+    // TODO use callback instead of storing state
     private String fileContent;
 
     @Override

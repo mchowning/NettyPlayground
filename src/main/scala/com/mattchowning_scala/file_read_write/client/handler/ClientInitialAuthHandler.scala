@@ -1,12 +1,12 @@
 package com.mattchowning_scala.file_read_write.client.handler
 
 import com.google.gson.JsonSyntaxException
-import com.mattchowning.file_read_write.server.model.OAuthToken
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.SimpleChannelInboundHandler
 import io.netty.handler.codec.http.FullHttpResponse
-import com.mattchowning.file_read_write.SharedConstants.GSON
-import com.mattchowning.file_read_write.SharedConstants.RESPONSE_CHARSET
+import com.mattchowning_scala.file_read_write.server.model.OAuthToken
+import com.mattchowning_scala.file_read_write.SharedConstants.GSON
+import com.mattchowning_scala.file_read_write.SharedConstants.RESPONSE_CHARSET
 
 class ClientInitialAuthHandler(successHandler: OAuthToken => Unit,
                                failureHandler: () => Unit)

@@ -12,6 +12,7 @@ import static com.mattchowning.file_read_write.SharedConstants.RESPONSE_CHARSET;
 
 public class ClientInitialAuthHandler extends SimpleChannelInboundHandler<FullHttpResponse> {
 
+    // TODO use callback instead of storing state
     private OAuthToken oAuthToken;
 
     @Override
