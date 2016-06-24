@@ -12,7 +12,11 @@ import static com.mattchowning.file_read_write.SharedConstants.RESPONSE_CHARSET;
 
 public class ClientInitialAuthHandler extends SimpleChannelInboundHandler<FullHttpResponse> {
 
-    private OAuthToken oAuthToken;
+    private final HandlerCallback<OAuthToken> callback;
+
+    public ClientInitialAuthHandler(HandlerCallback<OAuthToken> callback) {
+        this.callback = callback;
+    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpResponse response) throws Exception {
@@ -21,12 +25,13 @@ public class ClientInitialAuthHandler extends SimpleChannelInboundHandler<FullHt
             case 200:
                 OAuthToken oAuthToken = parseOAuthResponse(responseBody);
                 if (oAuthToken != null) {
-                    this.oAuthToken = oAuthToken;
                     System.out.println("OAuth response received.");
+                    callback.onSuccess(oAuthToken);
                     break;
                 }
             default:
                 System.out.println("OAuth ERROR: " + responseBody);
+                callback.onError();
         }
         ctx.close();
     }
@@ -43,9 +48,6 @@ public class ClientInitialAuthHandler extends SimpleChannelInboundHandler<FullHt
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         cause.printStackTrace();
         ctx.close();
-    }
-
-    public OAuthToken getOAuthToken() {
-        return oAuthToken;
+        callback.onError();
     }
 }

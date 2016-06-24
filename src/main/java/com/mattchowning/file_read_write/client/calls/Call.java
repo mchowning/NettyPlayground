@@ -1,16 +1,7 @@
 package com.mattchowning.file_read_write.client.calls;
 
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.ChannelOutboundInvoker;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -23,7 +14,6 @@ public abstract class Call<T> {
     private final int port;
 
     protected abstract ChannelHandler[] getChannelHandlers();
-    protected abstract Supplier<T> getResultSupplier();
     protected abstract void makeRequest(ChannelOutboundInvoker ctx);
 
     public Call(String host, int port) {
@@ -31,20 +21,13 @@ public abstract class Call<T> {
         this.port = port;
     }
 
-    public void execute(Consumer<T> resultConsumer) {
-        ChannelFutureListener completionListener = ignored ->
-                resultConsumer.accept(getResultSupplier().get());
-        startClient(completionListener);
-    }
-
-    private void startClient(ChannelFutureListener completionListener) {
+    public void execute() {
 
         EventLoopGroup workerGroup = new NioEventLoopGroup();
 
         try {
             ChannelFuture f = bootstrap(workerGroup).connect(host, port)
                                                     .sync();
-            f.channel().closeFuture().addListener(completionListener);
             makeRequest(f.channel());
             f.channel().closeFuture().sync();
         } catch (InterruptedException e) {

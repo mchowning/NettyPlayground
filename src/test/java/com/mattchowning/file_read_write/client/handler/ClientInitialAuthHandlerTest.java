@@ -6,6 +6,7 @@ import com.mattchowning.file_read_write.server.model.OAuthToken;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -15,21 +16,18 @@ import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.util.CharsetUtil;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ClientInitialAuthHandlerTest {
 
     @Mock private ChannelHandlerContext ctx;
     @Mock private FullHttpResponse response;
-
-    private ClientInitialAuthHandler subject;
+    @Mock private HandlerCallback<OAuthToken> mockCallback;
+    @InjectMocks private ClientInitialAuthHandler subject;
 
     @Before
     public void before() {
-        subject = new ClientInitialAuthHandler();
         when(response.status()).thenReturn(HttpResponseStatus.OK);
     }
 
@@ -40,8 +38,7 @@ public class ClientInitialAuthHandlerTest {
 
         subject.channelRead0(ctx, response);
 
-        assertThat(subject.getOAuthToken())
-                .isEqualToComparingFieldByField(expected);
+        verify(mockCallback).onSuccess(expected);
     }
 
     private void setResponseBody(OAuthToken token) {

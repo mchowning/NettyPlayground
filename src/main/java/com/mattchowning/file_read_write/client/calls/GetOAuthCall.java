@@ -1,5 +1,8 @@
 package com.mattchowning.file_read_write.client.calls;
 
+import com.mattchowning.file_read_write.client.handler.HandlerCallback;
+import com.mattchowning.file_read_write.server.model.OAuthToken;
+
 import io.netty.channel.ChannelOutboundInvoker;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.multipart.HttpPostRequestEncoder;
@@ -11,8 +14,8 @@ public class GetOAuthCall extends OAuthCall {
     private final String username;
     private final String password;
 
-    public GetOAuthCall(String username, String password) {
-        super();
+    public GetOAuthCall(String username, String password, HandlerCallback<OAuthToken> callback) {
+        super(callback);
         this.username = username;
         this.password = password;
     }

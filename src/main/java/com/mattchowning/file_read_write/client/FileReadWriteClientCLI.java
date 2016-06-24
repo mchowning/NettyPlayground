@@ -1,5 +1,8 @@
 package com.mattchowning.file_read_write.client;
 
+import com.mattchowning.file_read_write.client.handler.HandlerCallback;
+import com.mattchowning.file_read_write.server.model.OAuthToken;
+
 import java.util.Scanner;
 
 public class FileReadWriteClientCLI {
@@ -8,37 +11,62 @@ public class FileReadWriteClientCLI {
     private static final String POST_SELECTION = "p";
     private static final String EXIT_SELECTION = "e";
 
+    private static FileReadWriteClient client;
+
     public static void main(String[] args) throws Exception {
-        FileReadWriteClient client = new FileReadWriteClient();
-        requestAuth(client);
+        client = new FileReadWriteClient();
+        requestAuth();
     }
 
-    private static void requestAuth(FileReadWriteClient client) {
+    private static void requestAuth() {
         String username = getUserInput("username");
         String password = getUserInput("password");
-        client.getOAuthToken(oAuthModel -> {
-            if (oAuthModel == null) {
-                System.out.println("Unable to authenticate. Try again.");
-                requestAuth(client);
-            } else {
-                getUserSelection(client);
+        HandlerCallback<OAuthToken> callback = new HandlerCallback<OAuthToken>() {
+            @Override
+            public void onSuccess(OAuthToken result) {
+                getUserSelection();
             }
-        }, username, password);
+
+            @Override
+            public void onError() {
+                System.out.println("Unable to authenticate. Try again.");
+                requestAuth();
+            }
+        };
+        client.getOAuthToken(callback, username, password);
     }
 
-    private static void getUserSelection(FileReadWriteClient client) {
+    private static void getUserSelection() {
         switch (askForUserSelection()) {
             case GET_SELECTION:
-                client.getFileContent(contents -> {
-                    System.out.println("file contents: " + contents);
-                    getUserSelection(client);
+                client.getFileContent(new HandlerCallback<String>() {
+                    @Override
+                    public void onSuccess(String result) {
+                        System.out.println("File contents: " + result);
+                        getUserSelection();
+                    }
+
+                    @Override
+                    public void onError() {
+                        System.out.println("Error retrieving file");
+                        getUserSelection();
+                    }
                 });
                 break;
             case POST_SELECTION:
                 String newFileContent = askForUserRequestedFileContent();
-                client.updateFileContent(newFileContent, updatedContent -> {
-                    System.out.println("file contents: " + updatedContent);
-                    getUserSelection(client);
+                client.updateFileContent(newFileContent, new HandlerCallback<String>() {
+                    @Override
+                    public void onSuccess(String result) {
+                        System.out.println("file contents: " + result);
+                        getUserSelection();
+                    }
+
+                    @Override
+                    public void onError() {
+                        System.out.println("Error updating file.");
+                        getUserSelection();
+                    }
                 });
                 break;
             case EXIT_SELECTION:
@@ -46,7 +74,7 @@ public class FileReadWriteClientCLI {
                 break;
             default:
                 System.out.println("Invalid selection.");
-                getUserSelection(client);
+                getUserSelection();
         }
     }
 
