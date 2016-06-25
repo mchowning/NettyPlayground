@@ -121,6 +121,7 @@ public class ServerOAuthRequestHandler extends SimpleChannelInboundHandler<FullH
 
         ctx.writeAndFlush(response);
     }
+
     private boolean isUserShady(String username, String password) {
         return "sleepynate".equals(username);
     }

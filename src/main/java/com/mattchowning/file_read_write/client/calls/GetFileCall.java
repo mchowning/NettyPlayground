@@ -11,7 +11,7 @@ import io.netty.handler.codec.http.*;
 
 public class GetFileCall extends FileCall {
 
-    public GetFileCall(@NotNull OAuthToken oAuthToken,
+    public GetFileCall(OAuthToken oAuthToken,
                        @NotNull FileReadWriteClient client,
                        HandlerCallback<String> callback) {
         super(oAuthToken, client, callback);
@@ -24,12 +24,9 @@ public class GetFileCall extends FileCall {
     }
 
     @Override
-    protected void makeAuthenticatedRequest(ChannelOutboundInvoker ctx) {
-        FullHttpMessage message = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1,
-                                                             HttpMethod.GET,
-                                                             "");
-        message.headers().add(HttpHeaderNames.AUTHORIZATION,
-                              oAuthToken.getEncodedAuthorizationHeader());
-        ctx.writeAndFlush(message);
+    protected FullHttpMessage getRequest(ChannelOutboundInvoker ctx) {
+        return new DefaultFullHttpRequest(HttpVersion.HTTP_1_1,
+                                          HttpMethod.GET,
+                                          "");
     }
 }

@@ -15,7 +15,7 @@ public class PostFileCall extends FileCall {
 
     private final String newFileContent;
 
-    public PostFileCall(@NotNull OAuthToken oAuthToken,
+    public PostFileCall(OAuthToken oAuthToken,
                         @NotNull String newFileContent,
                         FileReadWriteClient client,
                         HandlerCallback<String> callback) {
@@ -30,16 +30,14 @@ public class PostFileCall extends FileCall {
     }
 
     @Override
-    protected void makeAuthenticatedRequest(ChannelOutboundInvoker ctx) {
+    protected FullHttpMessage getRequest(ChannelOutboundInvoker ctx) {
+        System.out.println("Posting updated file content...");
         FullHttpMessage message = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1,
                                                              HttpMethod.POST,
                                                              "",
                                                              Unpooled.copiedBuffer(newFileContent,
                                                                                    CharsetUtil.UTF_8));
-        message.headers()
-               .add(HttpHeaderNames.CONTENT_LENGTH, newFileContent.length())
-               .add(HttpHeaderNames.AUTHORIZATION, oAuthToken.getEncodedAuthorizationHeader());
-        System.out.println("Posting updated file content...");
-        ctx.writeAndFlush(message);
+        message.headers().add(HttpHeaderNames.CONTENT_LENGTH, newFileContent.length());
+        return message;
     }
 }

@@ -10,6 +10,13 @@ public class FileReadWriteClient {
 
     private OAuthToken oAuthToken;
 
+    void logout() {
+        oAuthToken = null;
+    }
+    boolean isAuthorized() {
+        return oAuthToken != null;
+    }
+
     void getFileContent(HandlerCallback<String> callback) {
         Call<String> call = new GetFileCall(oAuthToken, this, callback);
         call.execute();
