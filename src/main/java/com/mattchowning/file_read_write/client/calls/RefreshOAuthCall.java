@@ -1,5 +1,8 @@
 package com.mattchowning.file_read_write.client.calls;
 
+import com.mattchowning.file_read_write.client.handler.HandlerCallback;
+import com.mattchowning.file_read_write.server.model.OAuthToken;
+
 import io.netty.channel.ChannelOutboundInvoker;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.multipart.HttpPostRequestEncoder;
@@ -10,7 +13,8 @@ public class RefreshOAuthCall extends OAuthCall {
 
     private final String refreshToken;
 
-    public RefreshOAuthCall(String refreshToken) {
+    public RefreshOAuthCall(String refreshToken, HandlerCallback<OAuthToken> callback) {
+        super(callback);
         this.refreshToken = refreshToken;
     }
 

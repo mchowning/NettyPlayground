@@ -7,16 +7,20 @@ import io.netty.util.CharsetUtil;
 
 public class ClientReadInboundFileHandler extends SimpleChannelInboundHandler<FullHttpResponse> {
 
-    // TODO use callback instead of storing state
-    private String fileContent;
+    private final HandlerCallback<String> callback;
+
+    public ClientReadInboundFileHandler(HandlerCallback<String> callback) {
+        this.callback = callback;
+    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpResponse response) throws Exception {
         String responseContent = getContent(response);
         if (response.status().code() == 200) {
-            fileContent = responseContent;
+            callback.onSuccess(responseContent);
         } else {
             System.out.println("Error retrieving file: " + responseContent);
+            callback.onError();
         }
         ctx.close();
     }
@@ -33,9 +37,6 @@ public class ClientReadInboundFileHandler extends SimpleChannelInboundHandler<Fu
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         cause.printStackTrace();
         ctx.close();
-    }
-
-    public String getFileContent() {
-        return fileContent;
+        callback.onError();
     }
 }

@@ -71,4 +71,29 @@ public class OAuthToken {
     public Long getGeneratedTime() {
         return generatedTime;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        OAuthToken that = (OAuthToken) o;
+
+        if (!accessToken.equals(that.accessToken)) {
+            return false;
+        }
+        return refreshToken.equals(that.refreshToken);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = accessToken.hashCode();
+        result = 31 * result + refreshToken.hashCode();
+        return result;
+    }
 }

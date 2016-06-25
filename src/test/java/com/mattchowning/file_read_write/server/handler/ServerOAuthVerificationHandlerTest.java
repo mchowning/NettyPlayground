@@ -10,8 +10,10 @@ import org.junit.runner.RunWith;
 import org.mockito.*;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
+import io.netty.util.Attribute;
 
 import static org.mockito.Mockito.*;
 
@@ -24,6 +26,8 @@ public class ServerOAuthVerificationHandlerTest {
     @Mock private OAuthTokenMap oAuthTokenMap;
     @Mock private ServerUtil serverUtil;
     @Mock private ChannelHandlerContext ctx;
+    @Mock private Channel channel;
+    @Mock private Attribute<Boolean> authAttribute;
     @Mock private FullHttpRequest request;
     @Mock private HttpHeaders httpHeaders;
     @Mock private OAuthToken oAuthToken;
@@ -31,6 +35,8 @@ public class ServerOAuthVerificationHandlerTest {
     @InjectMocks private ServerOAuthVerificationHandler subject;
 
     @Before public void before() {
+        when(ctx.channel()).thenReturn(channel);
+        when(channel.attr(ServerOAuthVerificationHandler.AUTHORIZED)).thenReturn(authAttribute);
         setupAuthorizedRequest();
     }
 
@@ -51,10 +57,7 @@ public class ServerOAuthVerificationHandlerTest {
 
     @Test public void forwards_authorized_request() throws Exception {
         subject.channelRead0(ctx, request);
-
-        InOrder inOrder = inOrder(ctx, request);
-        inOrder.verify(request).retain();
-        inOrder.verify(ctx).fireChannelRead(request);
+        verifyForwardsRequestWithAuthorizationState(true);
     }
 
     @Test public void sends_error_if_no_auth_header() throws Exception {
@@ -63,7 +66,7 @@ public class ServerOAuthVerificationHandlerTest {
 
         subject.channelRead0(ctx, request);
 
-        verifyBadRequestErrorSent();
+        verifyForwardsRequestWithAuthorizationState(false);
     }
 
     @Test public void sends_error_if_invalid_token_type() throws Exception {
@@ -82,6 +85,17 @@ public class ServerOAuthVerificationHandlerTest {
         when(oAuthToken.isExpired()).thenReturn(true);
         subject.channelRead0(ctx, request);
         verifyBadRequestErrorSent();
+    }
+
+    /*
+     * helper methods
+     */
+
+    private void verifyForwardsRequestWithAuthorizationState(boolean authorized) {
+        InOrder inOrder = inOrder(authAttribute, ctx, request);
+        inOrder.verify(authAttribute).set(authorized);
+        inOrder.verify(request).retain();
+        inOrder.verify(ctx).fireChannelRead(request);
     }
 
     private void verifyBadRequestErrorSent() {

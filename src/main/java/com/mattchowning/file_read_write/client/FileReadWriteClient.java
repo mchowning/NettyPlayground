@@ -1,36 +1,58 @@
 package com.mattchowning.file_read_write.client;
 
 import com.mattchowning.file_read_write.client.calls.*;
+import com.mattchowning.file_read_write.client.handler.HandlerCallback;
 import com.mattchowning.file_read_write.server.model.OAuthToken;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.function.Consumer;
-
 public class FileReadWriteClient {
 
     private OAuthToken oAuthToken;
-    private Consumer<OAuthToken> setOAuthToken = token -> this.oAuthToken = token;
 
-    void getFileContent(@NotNull Consumer<String> consumer) {
-        Call<String> call = new GetFileCall(oAuthToken, this);
-        call.execute(consumer);
+    void logout() {
+        oAuthToken = null;
+    }
+    boolean isAuthorized() {
+        return oAuthToken != null;
     }
 
-    void updateFileContent(@NotNull String newFileContent, @NotNull Consumer<String> consumer) {
-        Call<String> call = new PostFileCall(oAuthToken, newFileContent, this);
-        call.execute(consumer);
+    void getFileContent(HandlerCallback<String> callback) {
+        Call<String> call = new GetFileCall(oAuthToken, this, callback);
+        call.execute();
     }
 
-    void getOAuthToken(@NotNull Consumer<OAuthToken> externalConsumer,
-                       String username,
-                       String password) {
-        Call<OAuthToken> call = new GetOAuthCall(username, password);
-        call.execute(setOAuthToken.andThen(externalConsumer));
+    void updateFileContent(@NotNull String newFileContent, HandlerCallback<String> callback) {
+        Call<String> call = new PostFileCall(oAuthToken, newFileContent, this, callback);
+        call.execute();
     }
 
-    public void refreshOAuthToken(@NotNull Consumer<OAuthToken> externalConsumer) {
-        Call<OAuthToken> call = new RefreshOAuthCall(oAuthToken.getRefreshToken());
-        call.execute(setOAuthToken.andThen(externalConsumer));
+    void getOAuthToken(HandlerCallback<OAuthToken> callback, String username, String password) {
+        Call<OAuthToken> call = new GetOAuthCall(username,
+                                                 password,
+                                                 setOAuthTokenWithCallback(callback));
+        call.execute();
+    }
+
+    public void refreshOAuthToken(HandlerCallback<OAuthToken> callback) {
+        Call<OAuthToken> call = new RefreshOAuthCall(oAuthToken.getRefreshToken(),
+                                                     setOAuthTokenWithCallback(callback));
+        call.execute();
+    }
+
+    private HandlerCallback<OAuthToken> setOAuthTokenWithCallback(HandlerCallback<OAuthToken> originatingCallback) {
+        return new HandlerCallback<OAuthToken>() {
+            @Override
+            public void onSuccess(OAuthToken result) {
+                FileReadWriteClient.this.oAuthToken = result;
+                originatingCallback.onSuccess(result);
+
+            }
+
+            @Override
+            public void onError() {
+                originatingCallback.onError();
+            }
+        };
     }
 }

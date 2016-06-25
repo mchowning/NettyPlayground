@@ -6,10 +6,13 @@ import com.mattchowning.file_read_write.server.model.OAuthTokenMap;
 
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
+import io.netty.util.AttributeKey;
 import io.netty.util.ReferenceCountUtil;
 
 @ChannelHandler.Sharable
 public class ServerOAuthVerificationHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
+
+    public static final AttributeKey<Boolean> AUTHORIZED = AttributeKey.valueOf("isauthorized");
 
     private final OAuthTokenMap oAuthTokens;
     private final ServerUtil serverUtil;
@@ -26,13 +29,6 @@ public class ServerOAuthVerificationHandler extends SimpleChannelInboundHandler<
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
-        if (hasValidToken(ctx, request)) {
-            forwardRequest(ctx, request);
-        }
-    }
-
-    private boolean hasValidToken(ChannelHandlerContext ctx, FullHttpRequest request) {
-        boolean isAuthorized = false;
         if (request.headers().contains(HttpHeaderNames.AUTHORIZATION)) {
             String encodedAuthHeader = request.headers().get(HttpHeaderNames.AUTHORIZATION);
             OAuthToken receivedOAuthToken = serverUtil.getOAuthToken(encodedAuthHeader);
@@ -43,15 +39,15 @@ public class ServerOAuthVerificationHandler extends SimpleChannelInboundHandler<
             } else if (oAuthTokens.getWithAccessToken(receivedOAuthToken.getAccessToken()).isExpired()) { // use saved token to check expiration
                 serverUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_grant", "Token expired");
             } else {
-                isAuthorized = true;
+                forwardRequest(ctx, request, true);
             }
         } else {
-            serverUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, "invalid_request", "authorization header required");
+            forwardRequest(ctx, request, false);
         }
-        return isAuthorized;
     }
 
-    private void forwardRequest(ChannelHandlerContext ctx, FullHttpRequest request) {
+    private void forwardRequest(ChannelHandlerContext ctx, FullHttpRequest request, boolean isAuthorized) {
+        ctx.channel().attr(AUTHORIZED).set(isAuthorized);
         ReferenceCountUtil.retain(request);
         ctx.fireChannelRead(request);
     }
